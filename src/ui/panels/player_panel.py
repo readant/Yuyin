@@ -13,6 +13,7 @@ from ..components.lyrics import LyricsWidget
 from ..theme import theme_manager
 from ...infrastructure.audio.player import AudioPlayer
 from ...application.services.music_service import Track
+from ...shared.i18n import texts
 
 
 class ControlButton(QPushButton):
@@ -155,12 +156,12 @@ class PlayerPanel(QWidget):
         right.setContentsMargins(0, 20, 0, 0)
 
         # 曲目信息
-        self.title_label = QLabel("未播放")
+        self.title_label = QLabel(texts.PLAYER_NO_PLAY)
         self.title_label.setFont(QFont("FangSong", 24, QFont.Weight.Bold))
         self.title_label.setStyleSheet(f"color: {p.text}; background: transparent;")
         right.addWidget(self.title_label)
 
-        self.artist_label = QLabel("选择一首歌曲开始播放")
+        self.artist_label = QLabel(texts.PLAYER_SELECT_SONG)
         self.artist_label.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
         right.addWidget(self.artist_label)
 

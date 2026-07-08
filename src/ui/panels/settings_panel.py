@@ -6,6 +6,7 @@ from PyQt6.QtGui import QFont
 
 from ..theme import theme_manager, PRESETS
 from ..theme.palettes import Palette
+from ...shared.i18n import texts
 
 
 class ThemeCard(QFrame):
@@ -107,12 +108,12 @@ class SettingsPanel(QWidget):
         layout.setSpacing(25)
         
         # 标题
-        title = QLabel("⚙ 设置")
+        title = QLabel(texts.SETTINGS_TITLE)
         title.setFont(QFont("FangSong", 20, QFont.Weight.Bold))
         layout.addWidget(title)
-        
+
         # 主题设置
-        theme_section = self._create_section("🎨 主题风格")
+        theme_section = self._create_section(texts.SETTINGS_THEME)
         layout.addWidget(theme_section)
         
         # 主题卡片网格

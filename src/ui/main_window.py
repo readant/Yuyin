@@ -12,6 +12,7 @@ from .panels.rhythm_panel import RhythmPanel
 from .navigation.nav_button import NavButton
 from .theme import theme_manager
 from ..domain.models.database import DatabaseManager
+from ..shared.i18n import texts
 
 
 class MainWindow(QMainWindow):
@@ -95,12 +96,12 @@ class MainWindow(QMainWindow):
 
         self.nav_buttons = []
         pages = [
-            ("播放", "P", 0),
-            ("乐库", "L", 1),
-            ("指法", "F", 2),
-            ("歌词", "G", 3),
-            ("节奏", "R", 4),
-            ("设置", "S", 5),
+            (texts.NAV_PLAYER, "P", 0),
+            (texts.NAV_LIBRARY, "L", 1),
+            (texts.NAV_FINGERING, "F", 2),
+            (texts.NAV_LYRICS, "G", 3),
+            (texts.NAV_RHYTHM, "R", 4),
+            (texts.NAV_SETTINGS, "S", 5),
         ]
 
         for text, icon, index in pages:

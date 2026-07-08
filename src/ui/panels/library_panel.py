@@ -7,6 +7,7 @@ from PyQt6.QtGui import QFont
 
 from ..theme import theme_manager
 from ...application.services.music_service import music_library, Track
+from ...shared.i18n import texts
 
 
 class LibraryPanel(QWidget):
@@ -29,14 +30,14 @@ class LibraryPanel(QWidget):
         # 标题
         header = QHBoxLayout()
 
-        title = QLabel("📚 本地音乐库")
+        title = QLabel(texts.LIBRARY_TITLE)
         title.setFont(QFont("FangSong", 18, QFont.Weight.Bold))
         header.addWidget(title)
 
         header.addStretch()
 
         # 扫描按钮
-        scan_btn = QPushButton("📂 添加文件夹")
+        scan_btn = QPushButton(texts.LIBRARY_IMPORT)
         scan_btn.clicked.connect(self._scan_directory)
         header.addWidget(scan_btn)
 
@@ -44,7 +45,7 @@ class LibraryPanel(QWidget):
 
         # 搜索框
         self.search = QLineEdit()
-        self.search.setPlaceholderText("🔍 搜索歌曲、艺术家...")
+        self.search.setPlaceholderText(texts.LIBRARY_SEARCH)
         self.search.textChanged.connect(self._on_search)
         layout.addWidget(self.search)
 
@@ -53,10 +54,10 @@ class LibraryPanel(QWidget):
         tags_layout.setSpacing(8)
 
         self.tag_buttons = []
-        for tag in ["全部", "收藏", "最近播放"]:
+        for tag in [texts.LIBRARY_ALL, texts.LIBRARY_FAVORITE, texts.LIBRARY_RECENT]:
             btn = QPushButton(tag)
             btn.setCheckable(True)
-            if tag == "全部":
+            if tag == texts.LIBRARY_ALL:
                 btn.setChecked(True)
             btn.clicked.connect(lambda checked, b=btn, t=tag: self._on_tag(b, t))
             tags_layout.addWidget(btn)

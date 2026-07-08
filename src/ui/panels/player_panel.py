@@ -14,6 +14,7 @@ from ..components.chinese_controls import QingButton, ScrollProgressBar, PluckVo
 from ..theme import theme_manager
 from ...infrastructure.audio.player import AudioPlayer
 from ...application.services.music_service import Track
+from ...application.services.fade_service import fade_controller
 from ...shared.i18n import texts
 
 
@@ -311,13 +312,17 @@ class PlayerPanel(QWidget):
 
     def _toggle_play(self):
         if self._is_playing:
-            self.audio_player.pause()
+            # 淡出后暂停
+            fade_controller.fade_out(callback=lambda v: self.audio_player.set_volume(v))
             self.play_btn.setText("▶")
             self.vinyl.set_playing(False)
             self.spectrum.set_playing(False)
             self._is_playing = False
         else:
+            # 淡入播放
             self.audio_player.play()
+            fade_controller.fade_in(target_volume=self.volume_slider._value / 100.0,
+                                   callback=lambda v: self.audio_player.set_volume(v))
             self.play_btn.setText("⏸")
             self.vinyl.set_playing(True)
             self.spectrum.set_playing(True)

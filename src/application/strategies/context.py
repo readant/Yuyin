@@ -61,9 +61,13 @@ class AudioAnalyzerContext:
         return self._strategy.analyze(file_path)
 
     def record_and_analyze(self, duration: float = 5.0,
-                          sample_rate: int = 22050) -> List[str]:
+                          sample_rate: int = None) -> List[str]:
         """录音并分析"""
         import sounddevice as sd
+        from ...config import settings
+
+        if sample_rate is None:
+            sample_rate = settings.audio.sample_rate
 
         # 录音
         audio_data = sd.rec(int(duration * sample_rate),

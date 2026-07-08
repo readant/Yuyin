@@ -3,13 +3,14 @@ from typing import List, Tuple
 import numpy as np
 
 from .base import AnalysisStrategy
+from ...config import settings
 
 
 class LibrosaStrategy(AnalysisStrategy):
     """基于Librosa的高精度音频分析策略"""
 
-    def __init__(self, sample_rate: int = 22050):
-        self.sample_rate = sample_rate
+    def __init__(self, sample_rate: int = None):
+        self.sample_rate = sample_rate or settings.audio.sample_rate
 
     def load_audio(self, file_path: str) -> Tuple[np.ndarray, int]:
         import librosa

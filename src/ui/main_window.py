@@ -9,7 +9,7 @@ from .panels.fingering_panel import FingeringPanel
 from .panels.settings_panel import SettingsPanel
 from .navigation.nav_button import NavButton
 from .theme import theme_manager
-from ..database.models import DatabaseManager
+from ..domain.models.database import DatabaseManager
 
 
 class MainWindow(QMainWindow):
@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.db = DatabaseManager("data/zhudi.db")
+        self.db = DatabaseManager()
         self.settings = QSettings("Yuyin", "MainWindow")
 
         self._init_ui()

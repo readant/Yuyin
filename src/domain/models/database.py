@@ -67,8 +67,11 @@ class Setting(Base):
 
 class DatabaseManager:
     """数据库管理器"""
-    
-    def __init__(self, db_path='data/zhudi.db'):
+
+    def __init__(self, db_path=None):
+        if db_path is None:
+            from ...config import settings
+            db_path = settings.database.path
         self.engine = create_engine(f'sqlite:///{db_path}')
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)

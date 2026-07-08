@@ -7,16 +7,18 @@ import queue
 import threading
 import time
 
+from ...config import settings
+
 
 class RealtimeAnalyzer(QObject):
     """实时音频分析器 - 分析传入的音频数据"""
-    
+
     note_detected = pyqtSignal(str, float)  # 音符, 置信度
-    
+
     def __init__(self):
         super().__init__()
-        
-        self.sample_rate = 22050
+
+        self.sample_rate = settings.audio.sample_rate
         self.is_running = False
         
         # 音高检测参数
@@ -181,14 +183,14 @@ class AudioPlaybackAnalyzer(QObject):
     
     def __init__(self):
         super().__init__()
-        
+
         self.analyzer = RealtimeAnalyzer()
         self.analyzer.note_detected.connect(self._on_note_detected)
-        
+
         # 播放状态
         self.is_playing = False
         self.audio_data = None
-        self.sample_rate = 22050
+        self.sample_rate = settings.audio.sample_rate
         self.current_position = 0.0
         self.current_sample = 0
         

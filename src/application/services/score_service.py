@@ -1,13 +1,13 @@
 """乐谱服务"""
 from typing import List, Optional
-from ..database.models import DatabaseManager
+from ...domain.models.database import DatabaseManager
 
 
 class ScoreService:
     """乐谱业务服务"""
 
     def __init__(self, db: DatabaseManager = None):
-        self.db = db or DatabaseManager("data/zhudi.db")
+        self.db = db or DatabaseManager()
 
     def get_all_scores(self) -> List[dict]:
         """获取所有乐谱"""

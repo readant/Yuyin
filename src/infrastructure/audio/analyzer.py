@@ -5,15 +5,16 @@ import sounddevice as sd
 import threading
 import queue
 
-from .strategies import AudioAnalyzerContext, AnalysisStrategy
-from .strategies import LibrosaStrategy, SimpleStrategy
+from ...config import settings
+from ...application.strategies import AudioAnalyzerContext, AnalysisStrategy
+from ...application.strategies import LibrosaStrategy, SimpleStrategy
 
 
 class AudioAnalyzer:
     """音频分析器（使用策略模式）"""
 
     def __init__(self, strategy: Optional[AnalysisStrategy] = None):
-        self.sample_rate = 22050
+        self.sample_rate = settings.audio.sample_rate
         self.is_recording = False
         self.audio_queue = queue.Queue()
 

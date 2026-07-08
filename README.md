@@ -1,4 +1,4 @@
-# 余音 v2.0
+# 余音 v0.1.0
 
 专业的音乐播放器，兼具竹笛学习功能。中国风设计，支持多主题切换。
 
@@ -240,7 +240,7 @@ UI --> Application --> Domain <-- Infrastructure
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/your-username/yuyin.git
+git clone https://github.com/readant/yuyin.git
 cd yuyin
 
 # 2. 创建虚拟环境

@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.content_stack, 1)
 
         self.player_page = PlayerPanel()
-        self.library_page = LibraryPanel(self.db)
+        self.library_page = LibraryPanel()
         self.fingering_page = FingeringPanel()
         self.settings_page = SettingsPanel()
 

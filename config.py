@@ -1,12 +1,13 @@
-# 余音 - 配置文件
+# 余音 - 配置文件（兼容旧接口）
+from src.config import settings
 
 # 应用信息
-APP_NAME = "余音"
-APP_VERSION = "0.0.1"
+APP_NAME = settings.app.name
+APP_VERSION = settings.app.version
 APP_DESCRIPTION = "专业的简谱学习工具"
 
 # 数据库配置
-DATABASE_PATH = "data/yuyin.db"
+DATABASE_PATH = settings.database.path
 
 # 默认设置
 DEFAULT_KEY = "D"
@@ -21,7 +22,7 @@ SUPPORTED_KEYS = ['D', 'G', 'C', 'F', 'E']
 SUPPORTED_FINGERINGS = ['5', '1', '2']
 
 # 音频配置
-SAMPLE_RATE = 22050
+SAMPLE_RATE = settings.audio.sample_rate
 SUPPORTED_AUDIO_FORMATS = ['wav', 'mp3', 'flac']
 
 # 界面配置

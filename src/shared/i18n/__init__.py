@@ -1,4 +1,4 @@
 # 古籍式文案系统
-from .texts import Texts
+from .texts import Texts, texts
 
-__all__ = ['Texts']
+__all__ = ['Texts', 'texts']

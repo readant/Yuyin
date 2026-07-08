@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 项目
+data/*.db
+logs/
+*.log
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 测试
+.coverage
+htmlcov/
+.pytest_cache/

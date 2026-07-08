@@ -18,9 +18,10 @@ class AudioPlayer(QObject):
     
     def __init__(self):
         super().__init__()
-        
+
         self.player = QMediaPlayer()
         self.audio_output = QAudioOutput()
+        self.audio_output.setVolume(1.0)  # 设置默认音量为最大
         self.player.setAudioOutput(self.audio_output)
         
         # 连接信号

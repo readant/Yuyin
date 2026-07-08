@@ -1,0 +1,30 @@
+# 余音 - 依赖列表
+
+# GUI框架
+PyQt6>=6.5.0
+PyQt6-sip>=13.4.0
+
+# 数据库
+sqlalchemy>=2.0.0
+
+# 音频处理
+librosa>=0.10.0
+sounddevice>=0.4.0
+soundfile>=0.12.0
+
+# 数值计算
+numpy>=1.24.0
+scipy>=1.10.0
+
+# PDF导出
+reportlab>=4.0.0
+
+# 图像处理
+Pillow>=10.0.0
+
+# MIDI支持
+midiutil>=1.2.1
+
+# 其他
+numba>=0.57.0
+scikit-learn>=1.3.0

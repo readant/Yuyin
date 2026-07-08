@@ -7,6 +7,7 @@ from .panels.player_panel import PlayerPanel
 from .panels.library_panel import LibraryPanel
 from .panels.fingering_panel import FingeringPanel
 from .panels.settings_panel import SettingsPanel
+from .panels.lyrics_editor_panel import LyricsEditorPanel
 from .navigation.nav_button import NavButton
 from .theme import theme_manager
 from ..domain.models.database import DatabaseManager
@@ -54,12 +55,14 @@ class MainWindow(QMainWindow):
         self.player_page = PlayerPanel()
         self.library_page = LibraryPanel()
         self.fingering_page = FingeringPanel()
+        self.lyrics_editor_page = LyricsEditorPanel()
         self.settings_page = SettingsPanel()
 
-        self.content_stack.addWidget(self.player_page)
-        self.content_stack.addWidget(self.library_page)
-        self.content_stack.addWidget(self.fingering_page)
-        self.content_stack.addWidget(self.settings_page)
+        self.content_stack.addWidget(self.player_page)       # 0
+        self.content_stack.addWidget(self.library_page)      # 1
+        self.content_stack.addWidget(self.fingering_page)    # 2
+        self.content_stack.addWidget(self.lyrics_editor_page) # 3
+        self.content_stack.addWidget(self.settings_page)     # 4
 
         # 学习面板
         self.learning_panel = self._create_learning_panel()
@@ -77,7 +80,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 10, 0, 10)
         layout.setSpacing(5)
 
-        logo = QLabel("🎵")
+        logo = QLabel("Y")
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         logo.setFont(logo.font())
         layout.addWidget(logo)
@@ -86,10 +89,11 @@ class MainWindow(QMainWindow):
 
         self.nav_buttons = []
         pages = [
-            ("播放", "▶", 0),
-            ("乐库", "📚", 1),
-            ("指法", "🎯", 2),
-            ("设置", "⚙", 3),
+            ("播放", "P", 0),
+            ("乐库", "L", 1),
+            ("指法", "F", 2),
+            ("歌词", "G", 3),
+            ("设置", "S", 4),
         ]
 
         for text, icon, index in pages:
@@ -117,7 +121,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(10, 15, 10, 15)
 
-        title = QLabel("🎯 学习模式")
+        title = QLabel("学习模式")
         title.setFont(title.font())
         layout.addWidget(title)
 
@@ -133,7 +137,7 @@ class MainWindow(QMainWindow):
         layout.addSpacing(10)
 
         layout.addWidget(QLabel("指法提示:"))
-        self.fingering_display = QLabel("○○○○○○")
+        self.fingering_display = QLabel("------")
         self.fingering_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.fingering_display)
 

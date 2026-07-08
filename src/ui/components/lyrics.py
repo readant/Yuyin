@@ -4,7 +4,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QColor
 
 from ..theme import theme_manager
-from ...services.lyrics_service import lyrics_manager
+from ...application.services.lyrics_service import lyrics_manager
 
 
 class LyricsWidget(QWidget):

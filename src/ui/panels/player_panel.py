@@ -11,8 +11,8 @@ from ..components.spectrum import SpectrumWidget
 from ..components.progress import ProgressWidget
 from ..components.lyrics import LyricsWidget
 from ..theme import theme_manager
-from ...audio.player import AudioPlayer
-from ...services.music_service import Track
+from ...infrastructure.audio.player import AudioPlayer
+from ...application.services.music_service import Track
 
 
 class ControlButton(QPushButton):

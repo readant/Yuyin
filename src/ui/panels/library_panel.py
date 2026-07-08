@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from ..theme import theme_manager
-from ...services.music_service import music_library, Track
+from ...application.services.music_service import music_library, Track
 
 
 class LibraryPanel(QWidget):

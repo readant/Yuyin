@@ -6,8 +6,8 @@ from PyQt6.QtGui import QFont
 
 from ..components.fingering import FingeringWidget, FingeringDisplay
 from ..theme import theme_manager
-from ...core.notes import (get_fingering_map, get_all_notes_for_fingering,
-                          get_fingering_display, KEY_CONFIGS)
+from ...domain.models.notes import (get_fingering_map, get_all_notes_for_fingering,
+                                   get_fingering_display, KEY_CONFIGS)
 
 
 class FingeringPanel(QWidget):

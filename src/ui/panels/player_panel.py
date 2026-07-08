@@ -13,6 +13,7 @@ from ..components.lyrics import LyricsWidget
 from ..components.chinese_controls import QingButton, ScrollProgressBar, PluckVolumeSlider
 from ..theme import theme_manager
 from ...infrastructure.audio.player import AudioPlayer
+from ...infrastructure.audio.device_detector import audio_device_detector
 from ...application.services.music_service import Track
 from ...application.services.fade_service import fade_controller
 from ...shared.i18n import texts
@@ -113,6 +114,13 @@ class PlayerPanel(QWidget):
         top_bar.addWidget(self.learning_btn)
 
         top_bar.addStretch()
+
+        # 音频设备状态
+        self.device_label = QLabel()
+        self.device_label.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
+        self._update_device_display()
+        audio_device_detector.device_changed.connect(lambda: self._update_device_display())
+        top_bar.addWidget(self.device_label)
 
         # 视图切换按钮
         self.view_toggle = QPushButton("📜 歌词")
@@ -266,6 +274,13 @@ class PlayerPanel(QWidget):
                     color: {p.primary};
                 }}
             """)
+
+    def _update_device_display(self):
+        """更新音频设备显示"""
+        icon = audio_device_detector.get_device_icon()
+        type_name = audio_device_detector.get_device_type_name()
+        device_name = audio_device_detector.current_device.name if audio_device_detector.current_device else ""
+        self.device_label.setText(f"{icon} {type_name}: {device_name}")
 
     def _toggle_learning(self):
         self._learning_enabled = self.learning_btn.isChecked()

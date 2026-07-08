@@ -1,7 +1,7 @@
 """转场动效组件"""
 import math
 from PyQt6.QtWidgets import QWidget, QStackedWidget
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QParallelAnimationGroup, QTimer
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QPointF
 from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QRadialGradient
 
 from ..theme import theme_manager
@@ -22,7 +22,7 @@ class CurtainTransition(QWidget):
         self._progress = 0
         self.show()
 
-        self._animation = QPropertyAnimation(self, b"progress")
+        self._animation = QPropertyAnimation(self, b"curtainProgress")
         self._animation.setDuration(duration)
         self._animation.setStartValue(0)
         self._animation.setEndValue(100)
@@ -34,14 +34,14 @@ class CurtainTransition(QWidget):
         self._is_animating = False
         self.hide()
 
-    def get_progress(self):
+    def getCurtainProgress(self):
         return self._progress
 
-    def set_progress(self, value):
+    def setCurtainProgress(self, value):
         self._progress = value
         self.update()
 
-    progress = property(get_progress, set_progress)
+    curtainProgress = property(getCurtainProgress, setCurtainProgress)
 
     def paintEvent(self, event):
         if not self._is_animating:
@@ -92,7 +92,7 @@ class InkSplashTransition(QWidget):
         self._progress = 0
         self.show()
 
-        self._animation = QPropertyAnimation(self, b"progress")
+        self._animation = QPropertyAnimation(self, b"inkProgress")
         self._animation.setDuration(duration)
         self._animation.setStartValue(0)
         self._animation.setEndValue(100)
@@ -104,14 +104,14 @@ class InkSplashTransition(QWidget):
         self._is_animating = False
         self.hide()
 
-    def get_progress(self):
+    def getInkProgress(self):
         return self._progress
 
-    def set_progress(self, value):
+    def setInkProgress(self, value):
         self._progress = value
         self.update()
 
-    progress = property(get_progress, set_progress)
+    inkProgress = property(getInkProgress, setInkProgress)
 
     def paintEvent(self, event):
         if not self._is_animating:
@@ -122,14 +122,14 @@ class InkSplashTransition(QWidget):
 
         p = theme_manager.current_palette
         rect = self.rect()
-        center = rect.center()
+        center = QPointF(rect.center().x(), rect.center().y())
 
         # 墨晕效果 - 从中心扩散
         max_radius = math.sqrt(rect.width()**2 + rect.height()**2) / 2
         radius = max_radius * self._progress / 100
 
         # 创建径向渐变
-        gradient = QRadialGradient(center.x(), center.y(), radius)
+        gradient = QRadialGradient(center, radius)
         gradient.setColorAt(0, QColor(p.ink + "FF"))
         gradient.setColorAt(0.7, QColor(p.ink + "DD"))
         gradient.setColorAt(0.9, QColor(p.ink + "88"))
@@ -157,7 +157,7 @@ class PageFlipTransition(QWidget):
         self._progress = 0
         self.show()
 
-        self._animation = QPropertyAnimation(self, b"progress")
+        self._animation = QPropertyAnimation(self, b"pageProgress")
         self._animation.setDuration(duration)
         self._animation.setStartValue(0)
         self._animation.setEndValue(100)
@@ -169,14 +169,14 @@ class PageFlipTransition(QWidget):
         self._is_animating = False
         self.hide()
 
-    def get_progress(self):
+    def getPageProgress(self):
         return self._progress
 
-    def set_progress(self, value):
+    def setPageProgress(self, value):
         self._progress = value
         self.update()
 
-    progress = property(get_progress, set_progress)
+    pageProgress = property(getPageProgress, setPageProgress)
 
     def paintEvent(self, event):
         if not self._is_animating:
@@ -201,7 +201,7 @@ class PageFlipTransition(QWidget):
 
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QBrush(shadow_gradient))
-            painter.drawRect(shadow_x - 30, 0, 30, rect.height())
+            painter.drawRect(int(shadow_x - 30), 0, 30, rect.height())
 
         # 绘制页面
         page_gradient = QLinearGradient(rect.width() - page_width, 0, rect.width(), 0)

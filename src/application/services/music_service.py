@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
 
-from ..exceptions import AudioLoadError
+from ...shared.exceptions import AudioLoadError
 
 
 @dataclass

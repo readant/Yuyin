@@ -171,19 +171,33 @@ class MainWindow(QMainWindow):
         p = theme_manager.current_palette
 
         nav = QFrame()
-        nav.setFixedWidth(70)
-        nav.setStyleSheet(f"QFrame {{ background-color: {p.surface}; border: none; }}")
+        nav.setFixedWidth(80)
+        nav.setStyleSheet(f"""
+            QFrame {{
+                background-color: {p.surface};
+                border-right: 1px solid {p.border};
+                border-radius: 0;
+            }}
+        """)
 
         layout = QVBoxLayout(nav)
-        layout.setContentsMargins(0, 10, 0, 10)
-        layout.setSpacing(5)
+        layout.setContentsMargins(0, 20, 0, 20)
+        layout.setSpacing(8)
 
-        logo = QLabel("Y")
+        # Logo - 余字印章风格
+        logo = QLabel("余")
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo.setFont(logo.font())
+        logo.setFont(QFont("FangSong", 20, QFont.Weight.Bold))
+        logo.setStyleSheet(f"""
+            color: {p.primary};
+            padding: 10px;
+            border: 2px solid {p.primary};
+            border-radius: 5px;
+            background-color: {p.panel_bg};
+        """)
         layout.addWidget(logo)
 
-        layout.addSpacing(20)
+        layout.addSpacing(15)
 
         self.nav_buttons = []
         pages = [

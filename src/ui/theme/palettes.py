@@ -183,8 +183,51 @@ QING_CI = Palette(
     vermilion="#A65252"
 )
 
+# 国风水墨扩展配色
+SHUI_MO_DARK = Palette(
+    name="shui_mo_dark",
+    display_name="水墨深色",
+    background="#1A1A1A",
+    surface="#252525",
+    panel_bg="#2A2A2A",
+    primary="#C5A55A",
+    primary_light="#D4B86A",
+    primary_dark="#A68B4A",
+    secondary="#8B7355",
+    accent="#8B2500",
+    text="#F5F0E8",
+    text_secondary="#A0A0A0",
+    text_light="#707070",
+    border="#3A3A3A",
+    border_light="#4A4A4A",
+    success="#5A8C6A",
+    warning="#C5A55A",
+    error="#D4380D",
+    player_bg="#252525",
+    spectrum_1="#F5F0E8",
+    spectrum_2="#C5A55A",
+    spectrum_3="#8B2500",
+    button_bg="#8B2500",
+    button_hover="#A63200",
+    button_pressed="#6B1D00",
+    button_disabled="#3A3A3A",
+    progress_bg="#3A3A3A",
+    progress_fill="#C5A55A",
+    slider_bg="#3A3A3A",
+    slider_fill="#C5A55A",
+    slider_handle="#C5A55A",
+    input_bg="#2A2A2A",
+    input_border="#3A3A3A",
+    input_focus="#C5A55A",
+    gold="#C5A55A",
+    ink="#F5F0E8",
+    paper="#1A1A1A",
+    vermilion="#8B2500"
+)
+
 PRESETS: Dict[str, Palette] = {
     SHUI_MO.name: SHUI_MO,
+    SHUI_MO_DARK.name: SHUI_MO_DARK,
     ZHU_SHA.name: ZHU_SHA,
     QING_CI.name: QING_CI
 }

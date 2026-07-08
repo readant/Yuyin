@@ -179,7 +179,13 @@ class PlayerPanel(QWidget):
 
         # 频谱
         spec_container = QWidget()
-        spec_container.setStyleSheet("QWidget { background: rgba(0,0,0,0.1); border-radius: 10px; }")
+        spec_container.setStyleSheet(f"""
+            QWidget {{
+                background-color: {p.panel_bg};
+                border: 1px solid {p.border};
+                border-radius: 8px;
+            }}
+        """)
         spec_layout = QVBoxLayout(spec_container)
         spec_layout.setContentsMargins(10, 5, 10, 5)
         self.spectrum = SpectrumWidget()

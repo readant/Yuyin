@@ -2,47 +2,95 @@
 import os
 import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal, QThread, QTimer
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaDevices
 from PyQt6.QtCore import QUrl
 import sounddevice as sd
 
 
 class AudioPlayer(QObject):
     """音频播放器"""
-    
+
     # 信号
     position_changed = pyqtSignal(float)  # 当前位置(秒)
     duration_changed = pyqtSignal(float)  # 总时长(秒)
     state_changed = pyqtSignal(str)  # 状态: playing, paused, stopped
     playback_finished = pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
 
         self.player = QMediaPlayer()
         self.audio_output = QAudioOutput()
         self.audio_output.setVolume(1.0)  # 设置默认音量为最大
+
+        # 设置音频输出设备为系统默认
+        self._set_default_audio_device()
+
         self.player.setAudioOutput(self.audio_output)
-        
+
         # 连接信号
         self.player.positionChanged.connect(self._on_position_changed)
         self.player.durationChanged.connect(self._on_duration_changed)
         self.player.playbackStateChanged.connect(self._on_state_changed)
         self.player.mediaStatusChanged.connect(self._on_media_status)
-        
+
         # 进度更新定时器
         self.progress_timer = QTimer()
         self.progress_timer.setInterval(50)  # 50ms更新一次
         self.progress_timer.timeout.connect(self._update_progress)
-        
+
         # 状态
         self.current_file = None
         self.duration = 0
         self.is_playing = False
-        
+
         # 音符时间映射
         self.note_timeline = []
         self.current_note_index = 0
+
+    def _set_default_audio_device(self):
+        """设置默认音频输出设备"""
+        try:
+            # 列出所有可用音频设备
+            devices = QMediaDevices.audioOutputs()
+            print(f"可用音频设备: {len(devices)}")
+            for i, device in enumerate(devices):
+                print(f"  {i}: {device.description()}")
+
+            # 优先使用扬声器，如果没有则使用系统默认
+            speaker_device = None
+            for device in devices:
+                if "扬声器" in device.description() or "speaker" in device.description().lower():
+                    speaker_device = device
+                    break
+
+            if speaker_device:
+                self.audio_output.setDevice(speaker_device)
+                print(f"使用音频设备: {speaker_device.description()}")
+            else:
+                # 使用系统默认音频输出设备
+                default_device = QMediaDevices.defaultAudioOutput()
+                if not default_device.isNull():
+                    self.audio_output.setDevice(default_device)
+                    print(f"使用音频设备: {default_device.description()}")
+                else:
+                    print("警告: 未找到默认音频输出设备，使用系统默认")
+        except Exception as e:
+            print(f"设置音频设备时出错: {e}")
+
+    def get_audio_devices(self):
+        """获取可用的音频输出设备列表"""
+        devices = []
+        for device in QMediaDevices.audioOutputs():
+            devices.append({
+                'name': device.description(),
+                'device': device
+            })
+        return devices
+
+    def set_audio_device(self, device):
+        """设置音频输出设备"""
+        self.audio_output.setDevice(device)
     
     def load_file(self, file_path: str):
         """加载音频文件"""

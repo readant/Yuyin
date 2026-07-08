@@ -10,6 +10,7 @@ from ..components.vinyl import VinylWidget
 from ..components.spectrum import SpectrumWidget
 from ..components.progress import ProgressWidget
 from ..components.lyrics import LyricsWidget
+from ..components.chinese_controls import QingButton, ScrollProgressBar, PluckVolumeSlider
 from ..theme import theme_manager
 from ...infrastructure.audio.player import AudioPlayer
 from ...application.services.music_service import Track
@@ -177,23 +178,24 @@ class PlayerPanel(QWidget):
         right.addWidget(spec_container)
 
         # 进度条
-        prog_container = QWidget()
-        prog_container.setStyleSheet("background: transparent;")
-        prog_layout = QVBoxLayout(prog_container)
-        prog_layout.setContentsMargins(0, 5, 0, 0)
+        # 卷轴进度条
+        self.progress = ScrollProgressBar()
+        self.progress.value_changed.connect(self._seek)
+        right.addWidget(self.progress)
 
+        # 时间显示
+        time_layout = QHBoxLayout()
         self.time_current = QLabel("00:00")
         self.time_current.setStyleSheet(f"color: {p.text_secondary}; font-family: Consolas; font-size: 11px; background: transparent;")
-        prog_layout.addWidget(self.time_current)
+        time_layout.addWidget(self.time_current)
 
-        self.progress = ProgressWidget()
-        prog_layout.addWidget(self.progress)
+        time_layout.addStretch()
 
         self.time_total = QLabel("00:00")
         self.time_total.setStyleSheet(f"color: {p.text_secondary}; font-family: Consolas; font-size: 11px; background: transparent;")
-        prog_layout.addWidget(self.time_total)
+        time_layout.addWidget(self.time_total)
 
-        right.addWidget(prog_container)
+        right.addLayout(time_layout)
 
         # 控制按钮
         controls = QHBoxLayout()
@@ -204,8 +206,7 @@ class PlayerPanel(QWidget):
         self.prev_btn.clicked.connect(self._prev_track)
         controls.addWidget(self.prev_btn)
 
-        self.play_btn = ControlButton("▶", 70)
-        self.play_btn._update_style(True)
+        self.play_btn = QingButton()
         self.play_btn.clicked.connect(self._toggle_play)
         controls.addWidget(self.play_btn)
 
@@ -215,21 +216,17 @@ class PlayerPanel(QWidget):
 
         right.addLayout(controls)
 
-        # 音量
-        from PyQt6.QtWidgets import QSlider
+        # 拨弦音量滑块
         vol_layout = QHBoxLayout()
         vol_layout.setSpacing(10)
         vol_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        vol_icon = QLabel("🔊")
-        vol_icon.setStyleSheet("background: transparent;")
+        vol_icon = QLabel("音量")
+        vol_icon.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
         vol_layout.addWidget(vol_icon)
 
-        self.volume_slider = QSlider(Qt.Orientation.Horizontal)
-        self.volume_slider.setRange(0, 100)
-        self.volume_slider.setValue(80)
-        self.volume_slider.setFixedWidth(150)
-        self.volume_slider.valueChanged.connect(self._on_volume)
+        self.volume_slider = PluckVolumeSlider()
+        self.volume_slider.value_changed.connect(self._on_volume)
         vol_layout.addWidget(self.volume_slider)
 
         right.addLayout(vol_layout)

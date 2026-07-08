@@ -10,90 +10,56 @@ from ..theme import theme_manager
 class QingButton(QPushButton):
     """磬形播放按钮"""
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, text: str = "▶", parent=None):
+        super().__init__(text, parent)
         self.setFixedSize(80, 80)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._is_playing = False
-        self._press_effect = 0
+
+        # 设置样式
+        self._update_style()
 
     def set_playing(self, playing: bool):
         self._is_playing = playing
-        self.update()
+        self._update_style()
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
+    def _update_style(self):
         p = theme_manager.current_palette
-        rect = self.rect()
-        center = rect.center()
-        radius = min(rect.width(), rect.height()) // 2 - 5
 
-        # 磬的形状 - 上宽下窄的梯形
-        painter.save()
-        painter.translate(center)
-
-        # 外圈阴影
         if self._is_playing:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(p.primary + "30"))
-            painter.drawEllipse(QPointF(0, 0), radius + 8, radius + 8)
-
-        # 磬的主体 - 使用圆形简化
-        gradient = QRadialGradient(0, -10, radius)
-        if self._is_playing:
-            gradient.setColorAt(0, QColor(p.primary_light))
-            gradient.setColorAt(0.7, QColor(p.primary))
-            gradient.setColorAt(1, QColor(p.primary_dark))
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {p.primary};
+                    color: {p.paper};
+                    border: none;
+                    border-radius: 40px;
+                    font-size: 24px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background-color: {p.primary_light};
+                }}
+                QPushButton:pressed {{
+                    background-color: {p.primary_dark};
+                }}
+            """)
         else:
-            gradient.setColorAt(0, QColor(p.secondary + "CC"))
-            gradient.setColorAt(0.7, QColor(p.secondary + "88"))
-            gradient.setColorAt(1, QColor(p.secondary + "44"))
-
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(gradient))
-        painter.drawEllipse(QPointF(0, 0), radius, radius)
-
-        # 磬的纹理 - 同心圆
-        painter.setPen(QPen(QColor(p.paper + "20"), 1))
-        for r in range(10, radius, 8):
-            painter.drawEllipse(QPointF(0, 0), r, r)
-
-        # 中心装饰
-        painter.setBrush(QColor(p.paper + "40"))
-        painter.drawEllipse(QPointF(0, 0), 8, 8)
-
-        # 播放/暂停符号
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(p.paper))
-
-        if self._is_playing:
-            # 暂停 - 两条竖线
-            painter.drawRect(-6, -10, 4, 20)
-            painter.drawRect(2, -10, 4, 20)
-        else:
-            # 播放 - 三角形
-            from PyQt6.QtGui import QPolygon
-            from PyQt6.QtCore import QPoint
-            triangle = QPolygon([
-                QPoint(-6, -10),
-                QPoint(-6, 10),
-                QPoint(10, 0)
-            ])
-            painter.drawPolygon(triangle)
-
-        painter.restore()
-        painter.end()
-
-    def mousePressEvent(self, event):
-        self._press_effect = 1
-        self.update()
-
-    def mouseReleaseEvent(self, event):
-        self._press_effect = 0
-        self.update()
-        super().mouseReleaseEvent(event)
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {p.secondary};
+                    color: {p.paper};
+                    border: none;
+                    border-radius: 40px;
+                    font-size: 24px;
+                    font-weight: bold;
+                }}
+                QPushButton:hover {{
+                    background-color: {p.secondary}CC;
+                }}
+                QPushButton:pressed {{
+                    background-color: {p.secondary}88;
+                }}
+            """)
 
 
 class ScrollProgressBar(QWidget):

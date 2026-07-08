@@ -75,9 +75,12 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("就绪")
 
     def _create_nav_bar(self) -> QWidget:
+        from .theme import theme_manager
+        p = theme_manager.current_palette
+
         nav = QFrame()
         nav.setFixedWidth(70)
-        nav.setStyleSheet("QFrame { background-color: rgba(0,0,0,0.1); border: none; }")
+        nav.setStyleSheet(f"QFrame {{ background-color: {p.surface}; border: none; }}")
 
         layout = QVBoxLayout(nav)
         layout.setContentsMargins(0, 10, 0, 10)

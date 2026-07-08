@@ -47,13 +47,13 @@ class NavButton(QPushButton):
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    color: {p.text_secondary};
+                    color: {p.text};
                     border: none;
                     border-radius: 10px;
                     padding: 8px;
                 }}
                 QPushButton:hover {{
-                    background-color: {p.surface};
-                    color: {p.text};
+                    background-color: {p.primary}30;
+                    color: {p.primary};
                 }}
             """)

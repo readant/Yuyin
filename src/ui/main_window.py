@@ -4,7 +4,7 @@ import random
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QStackedWidget, QLabel, QFrame)
 from PyQt6.QtCore import Qt, QSettings, QTimer
-from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QBrush
+from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QBrush, QFont
 
 from .panels.player_panel import PlayerPanel
 from .panels.library_panel import LibraryPanel

@@ -2,15 +2,17 @@
 import os
 import random
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                            QSlider, QPushButton, QFileDialog)
+                            QPushButton, QFileDialog, QStackedWidget)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 
 from ..components.vinyl import VinylWidget
 from ..components.spectrum import SpectrumWidget
 from ..components.progress import ProgressWidget
+from ..components.lyrics import LyricsWidget
 from ..theme import theme_manager
 from ...audio.player import AudioPlayer
+from ...services.music_service import Track
 
 
 class ControlButton(QPushButton):
@@ -66,6 +68,8 @@ class PlayerPanel(QWidget):
 
         self.audio_player = AudioPlayer()
         self._learning_enabled = False
+        self._current_track = None
+        self._is_playing = False
 
         self._connect_signals()
         self._init_ui()
@@ -107,25 +111,43 @@ class PlayerPanel(QWidget):
 
         top_bar.addStretch()
 
-        from ..components import __all__
+        # 视图切换按钮
+        self.view_toggle = QPushButton("📜 歌词")
+        self.view_toggle.setCheckable(True)
+        self.view_toggle.setFixedHeight(32)
+        self.view_toggle.clicked.connect(self._toggle_view)
+        top_bar.addWidget(self.view_toggle)
+
         open_btn = QPushButton("📂 打开")
         open_btn.clicked.connect(self._open_file)
         top_bar.addWidget(open_btn)
 
         bg_layout.addLayout(top_bar)
 
-        # 主内容
+        # 主内容区
         content = QHBoxLayout()
-        content.setSpacing(40)
+        content.setSpacing(30)
 
-        # 唱片
+        # 左侧：唱片 + 歌词切换
+        left_container = QStackedWidget()
+
+        # 唱片视图
         cover = QWidget()
         cover.setStyleSheet("background: transparent;")
         cover_layout = QVBoxLayout(cover)
         cover_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.vinyl = VinylWidget()
         cover_layout.addWidget(self.vinyl)
-        content.addWidget(cover, 1)
+        left_container.addWidget(cover)
+
+        # 歌词视图
+        self.lyrics_widget = LyricsWidget()
+        left_container.addWidget(self.lyrics_widget)
+
+        left_container.setCurrentIndex(0)
+        self.left_container = left_container
+
+        content.addWidget(left_container, 1)
 
         # 右侧控制
         right = QVBoxLayout()
@@ -177,20 +199,23 @@ class PlayerPanel(QWidget):
         controls.setSpacing(15)
         controls.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        prev_btn = ControlButton("⏮")
-        controls.addWidget(prev_btn)
+        self.prev_btn = ControlButton("⏮")
+        self.prev_btn.clicked.connect(self._prev_track)
+        controls.addWidget(self.prev_btn)
 
         self.play_btn = ControlButton("▶", 70)
         self.play_btn._update_style(True)
         self.play_btn.clicked.connect(self._toggle_play)
         controls.addWidget(self.play_btn)
 
-        next_btn = ControlButton("⏭")
-        controls.addWidget(next_btn)
+        self.next_btn = ControlButton("⏭")
+        self.next_btn.clicked.connect(self._next_track)
+        controls.addWidget(self.next_btn)
 
         right.addLayout(controls)
 
         # 音量
+        from PyQt6.QtWidgets import QSlider
         vol_layout = QHBoxLayout()
         vol_layout.setSpacing(10)
         vol_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -248,28 +273,67 @@ class PlayerPanel(QWidget):
         self._update_learning_btn(self._learning_enabled)
         self.learning_mode_changed.emit(self._learning_enabled)
 
+    def _toggle_view(self):
+        """切换唱片/歌词视图"""
+        is_lyrics = self.view_toggle.isChecked()
+        self.left_container.setCurrentIndex(1 if is_lyrics else 0)
+        self.view_toggle.setText("💿 唱片" if is_lyrics else "📜 歌词")
+
     def _open_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self, "打开音频", "",
             "音频文件 (*.wav *.mp3 *.flac *.ogg);;所有文件 (*.*)"
         )
         if file_path:
-            self.audio_player.load_file(file_path)
-            name = os.path.splitext(os.path.basename(file_path))[0]
-            self.title_label.setText(name)
-            self.artist_label.setText("本地音乐")
+            self.load_track(file_path)
+
+    def load_track(self, file_path: str, title: str = None, artist: str = None):
+        """加载曲目"""
+        self.audio_player.load_file(file_path)
+
+        if not title:
+            title = os.path.splitext(os.path.basename(file_path))[0]
+        if not artist:
+            artist = "本地音乐"
+
+        self.title_label.setText(title)
+        self.artist_label.setText(artist)
+
+        # 尝试加载歌词
+        lrc_path = os.path.splitext(file_path)[0] + '.lrc'
+        if os.path.exists(lrc_path):
+            self.lyrics_widget.load_lyrics(lrc_path)
+        else:
+            self.lyrics_widget.clear()
+
+    def load_track_object(self, track: Track):
+        """加载Track对象"""
+        self._current_track = track
+        self.load_track(track.file_path, track.title, track.artist)
 
     def _toggle_play(self):
-        if self.audio_player.is_playing:
+        if self._is_playing:
             self.audio_player.pause()
             self.play_btn.setText("▶")
             self.vinyl.set_playing(False)
             self.spectrum.set_playing(False)
+            self._is_playing = False
         else:
             self.audio_player.play()
             self.play_btn.setText("⏸")
             self.vinyl.set_playing(True)
             self.spectrum.set_playing(True)
+            self._is_playing = True
+
+    def _prev_track(self):
+        """上一首"""
+        # TODO: 从播放列表获取
+        pass
+
+    def _next_track(self):
+        """下一首"""
+        # TODO: 从播放列表获取
+        pass
 
     def _on_position_changed(self, pos: float):
         dur = self.audio_player.get_duration()
@@ -279,6 +343,9 @@ class PlayerPanel(QWidget):
 
             bars = [random.randint(10, 80) for _ in range(32)]
             self.spectrum.set_bars(bars)
+
+            # 更新歌词
+            self.lyrics_widget.update_position(pos)
 
             if self._learning_enabled and random.random() > 0.7:
                 notes = ['1', '2', '3', '4', '5', '6', '7']
@@ -293,6 +360,7 @@ class PlayerPanel(QWidget):
         self.vinyl.set_playing(False)
         self.spectrum.set_playing(False)
         self.progress.set_value(0)
+        self._is_playing = False
 
     def _seek(self, pos: int):
         self.audio_player.set_position(pos * 1000)

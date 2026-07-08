@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont
 
 from src.config import settings
-from src.logging_config import setup_logging, get_logger
+from src.shared.logging import setup_logging, get_logger
 
 
 def main():

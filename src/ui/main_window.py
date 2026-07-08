@@ -8,6 +8,7 @@ from .panels.library_panel import LibraryPanel
 from .panels.fingering_panel import FingeringPanel
 from .panels.settings_panel import SettingsPanel
 from .panels.lyrics_editor_panel import LyricsEditorPanel
+from .panels.rhythm_panel import RhythmPanel
 from .navigation.nav_button import NavButton
 from .theme import theme_manager
 from ..domain.models.database import DatabaseManager
@@ -56,13 +57,15 @@ class MainWindow(QMainWindow):
         self.library_page = LibraryPanel()
         self.fingering_page = FingeringPanel()
         self.lyrics_editor_page = LyricsEditorPanel()
+        self.rhythm_page = RhythmPanel()
         self.settings_page = SettingsPanel()
 
         self.content_stack.addWidget(self.player_page)       # 0
         self.content_stack.addWidget(self.library_page)      # 1
         self.content_stack.addWidget(self.fingering_page)    # 2
         self.content_stack.addWidget(self.lyrics_editor_page) # 3
-        self.content_stack.addWidget(self.settings_page)     # 4
+        self.content_stack.addWidget(self.rhythm_page)       # 4
+        self.content_stack.addWidget(self.settings_page)     # 5
 
         # 学习面板
         self.learning_panel = self._create_learning_panel()
@@ -93,7 +96,8 @@ class MainWindow(QMainWindow):
             ("乐库", "L", 1),
             ("指法", "F", 2),
             ("歌词", "G", 3),
-            ("设置", "S", 4),
+            ("节奏", "R", 4),
+            ("设置", "S", 5),
         ]
 
         for text, icon, index in pages:

@@ -240,7 +240,7 @@ UI --> Application --> Domain <-- Infrastructure
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/readant/yuyin.git
+git clone https://github.com/readant/Yuyin.git
 cd yuyin
 
 # 2. 创建虚拟环境

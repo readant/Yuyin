@@ -4,5 +4,6 @@ from .library_panel import LibraryPanel
 from .fingering_panel import FingeringPanel
 from .settings_panel import SettingsPanel
 from .lyrics_editor_panel import LyricsEditorPanel
+from .rhythm_panel import RhythmPanel
 
-__all__ = ['PlayerPanel', 'LibraryPanel', 'FingeringPanel', 'SettingsPanel', 'LyricsEditorPanel']
+__all__ = ['PlayerPanel', 'LibraryPanel', 'FingeringPanel', 'SettingsPanel', 'LyricsEditorPanel', 'RhythmPanel']

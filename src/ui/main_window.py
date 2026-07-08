@@ -13,6 +13,7 @@ from .panels.settings_panel import SettingsPanel
 from .panels.lyrics_editor_panel import LyricsEditorPanel
 from .panels.rhythm_panel import RhythmPanel
 from .navigation.nav_button import NavButton
+from .components.transitions import TransitionManager
 from .theme import theme_manager
 from ..domain.models.database import DatabaseManager
 from ..shared.i18n import texts
@@ -155,6 +156,10 @@ class MainWindow(QMainWindow):
         self.content_stack.addWidget(self.rhythm_page)
         self.content_stack.addWidget(self.settings_page)
 
+        # 转场管理器
+        self.transition_manager = TransitionManager(self.content_stack)
+        self.transition_manager.set_transition('ink')
+
         # 学习面板
         self.learning_panel = self._create_learning_panel()
         self.learning_panel.hide()
@@ -240,7 +245,7 @@ class MainWindow(QMainWindow):
         return panel
 
     def _switch_page(self, index: int):
-        self.content_stack.setCurrentIndex(index)
+        self.transition_manager.transition_to(index)
         for i, btn in enumerate(self.nav_buttons):
             btn.set_active(i == index)
 

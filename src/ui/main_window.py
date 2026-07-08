@@ -10,6 +10,7 @@ from .panels.settings_panel import SettingsPanel
 from .panels.lyrics_editor_panel import LyricsEditorPanel
 from .panels.rhythm_panel import RhythmPanel
 from .navigation.nav_button import NavButton
+from .components.animated_bg import DynamicBackground
 from .theme import theme_manager
 from ..domain.models.database import DatabaseManager
 from ..shared.i18n import texts
@@ -40,6 +41,14 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
+        # 动态背景
+        self.dynamic_bg = DynamicBackground()
+        self.dynamic_bg.lower()  # 放到底层
+        self.setCentralWidget(None)  # 临时移除central
+        self.setCentralWidget(central)
+        self.dynamic_bg.setParent(central)
+        self.dynamic_bg.setGeometry(central.rect())
+
         # 导航栏
         nav = self._create_nav_bar()
         main_layout.addWidget(nav)
@@ -52,6 +61,7 @@ class MainWindow(QMainWindow):
 
         # 内容区
         self.content_stack = QStackedWidget()
+        self.content_stack.setStyleSheet("background: transparent;")
         main_layout.addWidget(self.content_stack, 1)
 
         self.player_page = PlayerPanel()

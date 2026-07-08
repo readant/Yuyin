@@ -4,5 +4,6 @@ from .spectrum import SpectrumWidget
 from .progress import ProgressWidget
 from .fingering import FingeringWidget, FingeringDisplay
 from .lyrics import LyricsWidget
+from .animated_bg import AnimatedBackground, DynamicBackground
 
-__all__ = ['VinylWidget', 'SpectrumWidget', 'ProgressWidget', 'FingeringWidget', 'FingeringDisplay', 'LyricsWidget']
+__all__ = ['VinylWidget', 'SpectrumWidget', 'ProgressWidget', 'FingeringWidget', 'FingeringDisplay', 'LyricsWidget', 'AnimatedBackground', 'DynamicBackground']

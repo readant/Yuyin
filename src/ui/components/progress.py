@@ -34,7 +34,9 @@ class ProgressWidget(QWidget):
 
         # 轨道
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(p.border + "60"))
+        track_color = QColor(p.border)
+        track_color.setAlpha(96)
+        painter.setBrush(track_color)
         painter.drawRoundedRect(margin, y - 3, width, 6, 3, 3)
 
         # 进度

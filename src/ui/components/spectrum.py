@@ -70,7 +70,9 @@ class SpectrumWidget(QWidget):
         painter.drawRect(rect)
 
         # 水墨点
-        painter.setBrush(QColor(p.ink + "08"))
+        color = QColor(p.ink)
+        color.setAlpha(8)
+        painter.setBrush(color)
         for x, y, size in self._ink_spots:
             painter.drawEllipse(x - size // 2, y - size // 2, size, size)
 
@@ -91,20 +93,27 @@ class SpectrumWidget(QWidget):
                 ratio = min(1.0, bar_height / max_height)
 
                 if ratio < 0.3:
-                    color = QColor(p.spectrum_1 + "CC")
+                    color = QColor(p.spectrum_1)
+                    color.setAlpha(204)
                 elif ratio < 0.7:
-                    color = QColor(p.spectrum_2 + "CC")
+                    color = QColor(p.spectrum_2)
+                    color.setAlpha(204)
                 else:
-                    color = QColor(p.spectrum_3 + "CC")
+                    color = QColor(p.spectrum_3)
+                    color.setAlpha(204)
 
                 grad.setColorAt(0, color)
-                grad.setColorAt(1, QColor(p.spectrum_1 + "44"))
+                edge_color = QColor(p.spectrum_1)
+                edge_color.setAlpha(68)
+                grad.setColorAt(1, edge_color)
 
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(QBrush(grad))
                 painter.drawRoundedRect(int(x), int(y), int(bar_width), int(bar_height), 2, 2)
 
-                painter.setBrush(QBrush(QColor(p.paper + "40")))
+                highlight = QColor(p.paper)
+                highlight.setAlpha(64)
+                painter.setBrush(QBrush(highlight))
                 painter.drawEllipse(int(x + bar_width / 2 - 2), int(y), 4, 4)
 
         painter.end()

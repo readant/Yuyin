@@ -70,12 +70,16 @@ class VinylWidget(QWidget):
         painter.drawEllipse(QPointF(0, 0), radius, radius)
 
         # 纹理环
-        painter.setPen(QPen(QColor(p.paper + "15"), 1))
+        tex_color = QColor(p.paper)
+        tex_color.setAlpha(21)
+        painter.setPen(QPen(tex_color, 1))
         for r in range(30, radius - 20, 6):
             painter.drawEllipse(QPointF(0, 0), r, r)
 
         # 沟槽
-        painter.setPen(QPen(QColor(p.paper + "08"), 0.5))
+        groove_color = QColor(p.paper)
+        groove_color.setAlpha(8)
+        painter.setPen(QPen(groove_color, 0.5))
         for r in range(40, radius - 30, 3):
             painter.drawEllipse(QPointF(0, 0), r, r)
 
@@ -96,7 +100,9 @@ class VinylWidget(QWidget):
         painter.restore()
 
         # 文字
-        painter.setPen(QColor(p.text + "90"))
+        text_color = QColor(p.text)
+        text_color.setAlpha(144)
+        painter.setPen(text_color)
         painter.setFont(painter.font())
         painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "🎵\n余音")
 

@@ -34,9 +34,12 @@ class FingeringWidget(QWidget):
 
         gradient = QRadialGradient(rect.width() // 2, rect.height() // 2,
                                    max(body_width, body_height) // 2)
-        gradient.setColorAt(0, QColor(p.secondary + "CC"))
-        gradient.setColorAt(0.7, QColor(p.secondary + "88"))
-        gradient.setColorAt(1, QColor(p.secondary + "44"))
+        sec_color = QColor(p.secondary)
+        gradient.setColorAt(0, sec_color)
+        sec_color.setAlpha(204)
+        gradient.setColorAt(0.7, sec_color)
+        sec_color.setAlpha(68)
+        gradient.setColorAt(1, sec_color)
 
         painter.setPen(QPen(QColor(p.secondary), 1))
         painter.setBrush(gradient)
@@ -53,8 +56,12 @@ class FingeringWidget(QWidget):
             if pressed:
                 grad = QRadialGradient(center_x, y + hole_radius, hole_radius)
                 grad.setColorAt(0, QColor(p.ink))
-                grad.setColorAt(0.8, QColor(p.ink + "CC"))
-                grad.setColorAt(1, QColor(p.ink + "88"))
+                ink_alpha = QColor(p.ink)
+                ink_alpha.setAlpha(204)
+                grad.setColorAt(0.8, ink_alpha)
+                ink_light = QColor(p.ink)
+                ink_light.setAlpha(136)
+                grad.setColorAt(1, ink_light)
                 painter.setPen(QPen(QColor(p.ink), 1))
             else:
                 grad = QRadialGradient(center_x, y + hole_radius, hole_radius)

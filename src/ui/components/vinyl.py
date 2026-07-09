@@ -103,7 +103,8 @@ class VinylWidget(QWidget):
         text_color = QColor(p.text)
         text_color.setAlpha(144)
         painter.setPen(text_color)
-        painter.setFont(painter.font())
-        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "🎵\n余音")
+        font = QFont("FangSong", 16, QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "余音")
 
         painter.end()

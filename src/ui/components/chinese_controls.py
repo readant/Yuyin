@@ -10,7 +10,7 @@ from ..theme import theme_manager
 class QingButton(QPushButton):
     """磬形播放按钮"""
 
-    def __init__(self, text: str = "▶", parent=None):
+    def __init__(self, text: str = "▷", parent=None):
         super().__init__(text, parent)
         self.setFixedSize(80, 80)
         self.setCursor(Qt.CursorShape.PointingHandCursor)

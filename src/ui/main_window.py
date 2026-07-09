@@ -215,7 +215,8 @@ class MainWindow(QMainWindow):
         search_layout = QHBoxLayout(search_frame)
         search_layout.setContentsMargins(10, 5, 10, 5)
 
-        search_icon = QLabel("🔍")
+        search_icon = QLabel("◎")
+        search_icon.setStyleSheet(f"color: {p.text_secondary};")
         search_layout.addWidget(search_icon)
 
         search_input = QLabel("寻曲...")
@@ -225,15 +226,16 @@ class MainWindow(QMainWindow):
         layout.addWidget(search_frame)
 
         # 设置按钮
-        settings_btn = QPushButton("⚙")
+        settings_btn = QPushButton("设")
         settings_btn.setFixedSize(35, 35)
         settings_btn.setStyleSheet(f"""
             QPushButton {{
                 background-color: transparent;
                 color: {p.text_secondary};
-                border: none;
+                border: 1px solid {p.border};
                 border-radius: 17px;
-                font-size: 18px;
+                font-size: 12px;
+                font-family: "FangSong";
             }}
             QPushButton:hover {{
                 background-color: {p.surface};

@@ -67,18 +67,18 @@ class PlayerPanel(QWidget):
         controls.setSpacing(15)
         controls.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        prev_btn = QPushButton("⏮")
+        prev_btn = QPushButton("◁◁")
         prev_btn.setFixedSize(36, 36)
         prev_btn.setStyleSheet(self._get_control_btn_style())
         controls.addWidget(prev_btn)
 
-        self.play_btn = QPushButton("▶")
+        self.play_btn = QPushButton("▷")
         self.play_btn.setFixedSize(50, 50)
         self.play_btn.setStyleSheet(self._get_play_btn_style())
         self.play_btn.clicked.connect(self._toggle_play)
         controls.addWidget(self.play_btn)
 
-        next_btn = QPushButton("⏭")
+        next_btn = QPushButton("▷▷")
         next_btn.setFixedSize(36, 36)
         next_btn.setStyleSheet(self._get_control_btn_style())
         controls.addWidget(next_btn)
@@ -128,7 +128,8 @@ class PlayerPanel(QWidget):
         volume_panel = QHBoxLayout()
         volume_panel.setSpacing(8)
 
-        vol_icon = QLabel("🔊")
+        vol_icon = QLabel("音")
+        vol_icon.setStyleSheet(f"color: {p.text_secondary}; font-size: 12px;")
         volume_panel.addWidget(vol_icon)
 
         self.volume_slider = QSlider(Qt.Orientation.Horizontal)
@@ -198,11 +199,11 @@ class PlayerPanel(QWidget):
     def _toggle_play(self):
         if self._is_playing:
             self.audio_player.pause()
-            self.play_btn.setText("▶")
+            self.play_btn.setText("▷")
             self._is_playing = False
         else:
             self.audio_player.play()
-            self.play_btn.setText("⏸")
+            self.play_btn.setText("||")
             self._is_playing = True
 
     def _open_file(self):

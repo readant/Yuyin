@@ -8,6 +8,7 @@ from ..components.fingering import FingeringWidget, FingeringDisplay
 from ..theme import theme_manager
 from ...domain.models.notes import (get_fingering_map, get_all_notes_for_fingering,
                                    get_fingering_display, KEY_CONFIGS)
+from ...application.services.zhudi_service import zhudi_service
 
 
 class FingeringPanel(QWidget):
@@ -161,14 +162,18 @@ class FingeringPanel(QWidget):
         self.current_key = self.key_combo.currentText()
         self.current_fingering = self.fing_combo.currentText()
         self.current_note = self.note_combo.currentText()
-        
+
+        # 更新竹笛学习服务
+        zhudi_service.set_key(self.current_key)
+        zhudi_service.set_fingering(self.current_fingering)
+
         # 更新指法显示
         fingering_map = get_fingering_map(self.current_fingering)
         if self.current_note in fingering_map:
             fingering = fingering_map[self.current_note]
             self.fingering_widget.set_fingering(fingering)
             self.fingering_display.set_fingering(fingering)
-        
+
         # 更新各指法对照
         for ftype, label in self.fingering_texts.items():
             map_data = get_fingering_map(ftype)

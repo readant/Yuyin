@@ -287,7 +287,7 @@ class MainWindow(QMainWindow):
         layout.addStretch()
 
         # 版本信息
-        version_label = QLabel("v2.0")
+        version_label = QLabel("v0.1.0")
         version_label.setStyleSheet(f"color: {p.text_light}; font-size: 10px;")
         layout.addWidget(version_label)
 

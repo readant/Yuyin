@@ -2,8 +2,9 @@
 import os
 import sys
 import json
+import shutil
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,6 +93,18 @@ async def fingering_page(request: Request):
     return templates.TemplateResponse(request, "fingering.html")
 
 
+@app.get("/lyrics", response_class=HTMLResponse)
+async def lyrics_page(request: Request):
+    """歌词编辑"""
+    return templates.TemplateResponse(request, "lyrics.html")
+
+
+@app.get("/rhythm", response_class=HTMLResponse)
+async def rhythm_page(request: Request):
+    """节奏训练"""
+    return templates.TemplateResponse(request, "rhythm.html")
+
+
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """设置页面"""
@@ -137,6 +150,96 @@ async def scan_directory(req: ScanRequest):
         count = music_library.scan()
         return {"success": True, "count": count}
     return JSONResponse({"success": False, "error": "Invalid directory"}, status_code=400)
+
+
+@app.get("/api/scan-dirs")
+async def get_scan_dirs():
+    """获取已扫描的目录列表"""
+    dirs = music_library.get_scan_directories()
+    return {"directories": dirs}
+
+
+@app.delete("/api/scan-dirs")
+async def clear_scan_dirs():
+    """清空所有扫描目录和曲目"""
+    music_library.clear_scan_directories()
+    music_library._tracks.clear()
+    music_library._id_counter = 0
+    return {"success": True}
+
+
+# ==================== 背景图片API ====================
+
+BG_DIR = os.path.join(os.path.dirname(__file__), "static", "backgrounds")
+os.makedirs(BG_DIR, exist_ok=True)
+BG_CONFIG = os.path.join(BG_DIR, "config.json")
+
+def _load_bg_config():
+    if os.path.exists(BG_CONFIG):
+        with open(BG_CONFIG, "r", encoding="utf-8") as f:
+            return json.load(f)
+    # 默认使用项目中的笛箫两隔.png
+    default_bg = os.path.join(ROOT_DIR, "笛箫两隔.png")
+    if os.path.exists(default_bg):
+        import shutil
+        dest = os.path.join(BG_DIR, "default.png")
+        if not os.path.exists(dest):
+            shutil.copy2(default_bg, dest)
+        return {"current": "/static/backgrounds/default.png", "uploads": [{"filename": "default.png", "url": "/static/backgrounds/default.png", "name": "笛箫两隔.png"}]}
+    return {"current": None, "uploads": []}
+
+def _save_bg_config(config):
+    with open(BG_CONFIG, "w", encoding="utf-8") as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+
+@app.get("/api/background")
+async def get_background():
+    """获取当前背景图片"""
+    config = _load_bg_config()
+    return {"current": config.get("current"), "uploads": config.get("uploads", [])}
+
+@app.post("/api/background/upload")
+async def upload_background(file: UploadFile = File(...)):
+    """上传背景图片"""
+    if not file.content_type or not file.content_type.startswith("image/"):
+        return JSONResponse({"success": False, "error": "只能上传图片文件"}, status_code=400)
+
+    ext = os.path.splitext(file.filename)[1] or ".jpg"
+    filename = f"bg_{len(os.listdir(BG_DIR))}{ext}"
+    filepath = os.path.join(BG_DIR, filename)
+
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    config = _load_bg_config()
+    bg_url = f"/static/backgrounds/{filename}"
+    config["uploads"].append({"filename": filename, "url": bg_url, "name": file.filename})
+    config["current"] = bg_url
+    _save_bg_config(config)
+
+    return {"success": True, "url": bg_url}
+
+@app.post("/api/background/select")
+async def select_background(req: ScanRequest):
+    """选择已上传的背景图片"""
+    config = _load_bg_config()
+    config["current"] = req.path if req.path else None
+    _save_bg_config(config)
+    return {"success": True}
+
+@app.delete("/api/background/{filename}")
+async def delete_background(filename: str):
+    """删除背景图片"""
+    filepath = os.path.join(BG_DIR, filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+    config = _load_bg_config()
+    config["uploads"] = [u for u in config["uploads"] if u["filename"] != filename]
+    if config["current"] and filename in config["current"]:
+        config["current"] = None
+    _save_bg_config(config)
+    return {"success": True}
 
 
 @app.get("/api/serve-audio/{track_id}")
@@ -292,3 +395,98 @@ async def get_recent_practices(limit: int = 10):
     from src.application.services.zhudi_service import zhudi_service
     records = zhudi_service.get_recent_practices(limit)
     return {"records": records}
+
+
+# ==================== 歌词API ====================
+
+from src.application.services.lyrics_service import lyrics_manager, LyricsParser
+
+class LyricsRequest(BaseModel):
+    text: str
+    format: str = "lrc"
+
+@app.get("/api/lyrics")
+async def get_lyrics():
+    """获取当前歌词"""
+    return {
+        "lyrics": [{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics],
+        "has_lyrics": lyrics_manager.has_lyrics,
+        "current_index": lyrics_manager.current_index,
+    }
+
+@app.post("/api/lyrics")
+async def load_lyrics(req: LyricsRequest):
+    """加载歌词（从文本）"""
+    success = lyrics_manager.load_from_text(req.text, req.format)
+    return {"success": success, "count": lyrics_manager.count}
+
+@app.delete("/api/lyrics")
+async def clear_lyrics():
+    """清空歌词"""
+    lyrics_manager.clear()
+    return {"success": True}
+
+@app.get("/api/lyrics/export")
+async def export_lyrics():
+    """导出LRC格式歌词"""
+    return {"lrc": lyrics_manager.get_all_as_text()}
+
+
+# ==================== 节奏训练API ====================
+
+from src.application.services.rhythm_service import (
+    rhythm_coach, BEAT_PATTERNS, RHYTHM_EXERCISES, TimeSignature
+)
+
+@app.get("/api/rhythm/patterns")
+async def get_rhythm_patterns():
+    """获取所有节拍模式"""
+    patterns = []
+    for key, p in BEAT_PATTERNS.items():
+        patterns.append({
+            "key": key,
+            "name": p.name,
+            "time_signature": f"{p.time_signature.value[0]}/{p.time_signature.value[1]}",
+            "accents": p.accents,
+            "description": p.description,
+        })
+    return {"patterns": patterns}
+
+@app.get("/api/rhythm/exercises")
+async def get_rhythm_exercises():
+    """获取所有节奏练习"""
+    exercises = []
+    for e in RHYTHM_EXERCISES:
+        exercises.append({
+            "name": e.name,
+            "description": e.description,
+            "pattern_name": e.pattern.name,
+            "bpm_range": list(e.bpm_range),
+            "difficulty": e.difficulty,
+        })
+    return {"exercises": exercises}
+
+@app.post("/api/rhythm/start")
+async def start_rhythm(req: ScanRequest):
+    """开始节拍（传入BPM）"""
+    bpm = int(req.path) if req.path.isdigit() else 80
+    rhythm_coach.metronome.set_bpm(bpm)
+    rhythm_coach.metronome.play()
+    return {"success": True, "bpm": bpm}
+
+@app.post("/api/rhythm/stop")
+async def stop_rhythm():
+    """停止节拍"""
+    rhythm_coach.metronome.stop()
+    return {"success": True}
+
+@app.post("/api/rhythm/tap")
+async def tap_rhythm():
+    """Tap测速"""
+    bpm = rhythm_coach.metronome.tap()
+    return {"bpm": bpm}
+
+@app.get("/api/rhythm/stats")
+async def get_rhythm_stats():
+    """获取节奏练习统计"""
+    return rhythm_coach.get_practice_stats()

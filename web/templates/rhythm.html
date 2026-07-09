@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}余音 - 节奏训练{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">节奏训练</h1>
+    <p class="page-subtitle">节拍器与节奏练习</p>
+</div>
+
+<div class="rhythm-layout">
+    <!-- 左侧：节拍器控制 -->
+    <div class="rhythm-main">
+        <!-- 节拍可视化 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">节拍器</h2>
+            </div>
+            <div class="metronome-visual">
+                <div id="beat-dots" class="beat-dots"></div>
+                <div id="beat-indicator" class="beat-indicator">准备就绪</div>
+            </div>
+
+            <!-- BPM控制 -->
+            <div class="bpm-control">
+                <label class="form-label">BPM</label>
+                <div class="bpm-slider-row">
+                    <button class="btn btn-sm" onclick="adjustBPM(-10)">-10</button>
+                    <button class="btn btn-sm" onclick="adjustBPM(-1)">-1</button>
+                    <input type="range" id="bpm-slider" class="bpm-slider" min="40" max="240" value="80">
+                    <button class="btn btn-sm" onclick="adjustBPM(1)">+1</button>
+                    <button class="btn btn-sm" onclick="adjustBPM(10)">+10</button>
+                </div>
+                <div class="bpm-value" id="bpm-value">80</div>
+            </div>
+
+            <!-- Tap测速 -->
+            <div class="tap-area">
+                <button id="btn-tap" class="btn btn-tap">TAP</button>
+                <span id="tap-bpm" class="tap-bpm"></span>
+            </div>
+
+            <!-- 播放控制 -->
+            <div class="metronome-controls">
+                <button id="btn-play" class="play-btn">▶</button>
+            </div>
+        </div>
+
+        <!-- 节拍模式 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">节拍模式</h2>
+            </div>
+            <div id="pattern-list" class="pattern-list"></div>
+        </div>
+    </div>
+
+    <!-- 右侧：练习区 -->
+    <div class="rhythm-sidebar">
+        <!-- 节奏练习 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">节奏练习</h2>
+            </div>
+            <div id="exercise-list" class="exercise-list"></div>
+        </div>
+
+        <!-- 练习统计 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">练习统计</h2>
+            </div>
+            <div id="rhythm-stats" class="rhythm-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-total-time">0</div>
+                    <div class="stat-label">总练习时长（分钟）</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-sessions">0</div>
+                    <div class="stat-label">练习次数</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">使用说明</h2>
+            </div>
+            <div class="help-text">
+                <p>1. 选择节拍模式或直接调整BPM</p>
+                <p>2. 点击播放按钮开始节拍</p>
+                <p>3. 使用TAP按钮检测你打拍的速度</p>
+                <p>4. 选择练习项目进行节奏训练</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const bpmSlider = document.getElementById('bpm-slider');
+    const bpmValue = document.getElementById('bpm-value');
+    const beatDots = document.getElementById('beat-dots');
+    const beatIndicator = document.getElementById('beat-indicator');
+    const playBtn = document.getElementById('btn-play');
+    const tapBtn = document.getElementById('btn-tap');
+    const tapBpm = document.getElementById('tap-bpm');
+    const patternList = document.getElementById('pattern-list');
+    const exerciseList = document.getElementById('exercise-list');
+
+    let isPlaying = false;
+    let currentBeat = 0;
+    let currentPattern = null;
+    let beatInterval = null;
+
+    // BPM滑块
+    bpmSlider.addEventListener('input', (e) => {
+        bpmValue.textContent = e.target.value;
+    });
+
+    // 调整BPM
+    window.adjustBPM = function(delta) {
+        let bpm = parseInt(bpmSlider.value) + delta;
+        bpm = Math.max(40, Math.min(240, bpm));
+        bpmSlider.value = bpm;
+        bpmValue.textContent = bpm;
+    };
+
+    // 播放/暂停
+    playBtn.addEventListener('click', async () => {
+        if (isPlaying) {
+            await stopMetronome();
+        } else {
+            await startMetronome();
+        }
+    });
+
+    async function startMetronome() {
+        const bpm = bpmSlider.value;
+        try {
+            const resp = await fetch('/api/rhythm/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({path: bpm})
+            });
+            const data = await resp.json();
+            if (data.success) {
+                isPlaying = true;
+                playBtn.textContent = '■';
+                playBtn.classList.add('playing');
+                startBeatAnimation();
+            }
+        } catch (e) {
+            console.error('启动节拍器失败:', e);
+        }
+    }
+
+    async function stopMetronome() {
+        try {
+            await fetch('/api/rhythm/stop', { method: 'POST' });
+            isPlaying = false;
+            playBtn.textContent = '▶';
+            playBtn.classList.remove('playing');
+            stopBeatAnimation();
+        } catch (e) {
+            console.error('停止节拍器失败:', e);
+        }
+    }
+
+    // 节拍动画
+    function startBeatAnimation() {
+        const bpm = parseInt(bpmSlider.value);
+        const interval = 60000 / bpm;
+        let beat = 0;
+
+        beatInterval = setInterval(() => {
+            const dots = beatDots.children;
+            for (let d of dots) d.classList.remove('active', 'downbeat');
+
+            const dotIndex = beat % (currentPattern ? currentPattern.accents.length : 4);
+            if (dots[dotIndex]) {
+                dots[dotIndex].classList.add('active');
+                if (dotIndex === 0) dots[dotIndex].classList.add('downbeat');
+            }
+
+            beatIndicator.textContent = `第 ${dotIndex + 1} 拍`;
+            beat++;
+        }, interval);
+    }
+
+    function stopBeatAnimation() {
+        if (beatInterval) {
+            clearInterval(beatInterval);
+            beatInterval = null;
+        }
+        beatDots.querySelectorAll('.dot').forEach(d => d.classList.remove('active', 'downbeat'));
+        beatIndicator.textContent = '已停止';
+    }
+
+    // Tap测速
+    tapBtn.addEventListener('click', async () => {
+        try {
+            const resp = await fetch('/api/rhythm/tap', { method: 'POST' });
+            const data = await resp.json();
+            if (data.bpm > 0) {
+                tapBpm.textContent = `检测到: ${data.bpm} BPM`;
+                bpmSlider.value = data.bpm;
+                bpmValue.textContent = data.bpm;
+            }
+        } catch (e) {
+            console.error('Tap测速失败:', e);
+        }
+    });
+
+    // 加载节拍模式
+    async function loadPatterns() {
+        try {
+            const resp = await fetch('/api/rhythm/patterns');
+            const data = await resp.json();
+            if (data.patterns) {
+                patternList.innerHTML = data.patterns.map(p => `
+                    <div class="pattern-item" onclick="selectPattern('${p.key}', this)">
+                        <span class="pattern-name">${p.name}</span>
+                        <span class="pattern-desc">${p.description}</span>
+                    </div>
+                `).join('');
+
+                // 默认选中第一个
+                if (data.patterns.length > 0) {
+                    selectPattern(data.patterns[0].key, patternList.children[0]);
+                }
+            }
+        } catch (e) {
+            console.error('加载节拍模式失败:', e);
+        }
+    }
+
+    // 选择节拍模式
+    window.selectPattern = function(key, el) {
+        patternList.querySelectorAll('.pattern-item').forEach(item => item.classList.remove('selected'));
+        el.classList.add('selected');
+
+        // 更新节拍点显示
+        fetch('/api/rhythm/patterns')
+            .then(r => r.json())
+            .then(data => {
+                const pattern = data.patterns.find(p => p.key === key);
+                if (pattern) {
+                    currentPattern = pattern;
+                    beatDots.innerHTML = pattern.accents.map((a, i) => `
+                        <div class="dot" style="opacity: ${0.4 + a * 0.6}; width: ${20 + a * 20}px; height: ${20 + a * 20}px;"></div>
+                    `).join('');
+                }
+            });
+    };
+
+    // 加载节奏练习
+    async function loadExercises() {
+        try {
+            const resp = await fetch('/api/rhythm/exercises');
+            const data = await resp.json();
+            if (data.exercises) {
+                exerciseList.innerHTML = data.exercises.map(e => `
+                    <div class="exercise-item">
+                        <div class="exercise-info">
+                            <span class="exercise-name">${e.name}</span>
+                            <span class="exercise-desc">${e.description}</span>
+                            <span class="exercise-meta">${e.pattern_name} | BPM ${e.bpm_range[0]}-${e.bpm_range[1]} | 难度 ${e.difficulty}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            console.error('加载节奏练习失败:', e);
+        }
+    }
+
+    // 加载统计
+    async function loadStats() {
+        try {
+            const resp = await fetch('/api/rhythm/stats');
+            const data = await resp.json();
+            document.getElementById('stat-total-time').textContent = data.total_minutes || 0;
+            document.getElementById('stat-sessions').textContent = data.total_sessions || 0;
+        } catch (e) {
+            console.error('加载统计失败:', e);
+        }
+    }
+
+    loadPatterns();
+    loadExercises();
+    loadStats();
+});
+</script>
+{% endblock %}

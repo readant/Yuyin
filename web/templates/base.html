@@ -40,6 +40,14 @@
                     <span class="nav-icon">*</span>
                     <span class="nav-label">指法</span>
                 </a>
+                <a href="/lyrics" class="nav-item {% if request.url.path == '/lyrics' %}active{% endif %}">
+                    <span class="nav-icon">+</span>
+                    <span class="nav-label">歌词</span>
+                </a>
+                <a href="/rhythm" class="nav-item {% if request.url.path == '/rhythm' %}active{% endif %}">
+                    <span class="nav-icon">!</span>
+                    <span class="nav-label">节奏</span>
+                </a>
                 <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}">
                     <span class="nav-icon">#</span>
                     <span class="nav-label">设置</span>
@@ -58,6 +66,18 @@
 
     <audio id="audio-player" preload="auto"></audio>
     <script src="/static/js/player.js"></script>
+    <script>
+    // 页面加载时应用背景图片
+    fetch('/api/background').then(r => r.json()).then(data => {
+        if (data.current) {
+            document.body.style.backgroundImage = `url(${data.current})`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+        }
+    }).catch(() => {});
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

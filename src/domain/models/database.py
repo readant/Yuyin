@@ -58,11 +58,20 @@ class PracticeRecord(Base):
 class Setting(Base):
     """应用设置"""
     __tablename__ = 'settings'
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     key = Column(String(50), unique=True, nullable=False)
     value = Column(Text)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class ScanDirectory(Base):
+    """扫描目录表"""
+    __tablename__ = 'scan_directories'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    path = Column(String(500), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
 
 
 class DatabaseManager:
@@ -161,5 +170,50 @@ class DatabaseManager:
             if score_id:
                 query = query.filter(PracticeRecord.score_id == score_id)
             return query.order_by(PracticeRecord.created_at.desc()).limit(limit).all()
+        finally:
+            session.close()
+
+    # ==================== 扫描目录 ====================
+
+    def get_scan_directories(self):
+        session = self.get_session()
+        try:
+            dirs = session.query(ScanDirectory).all()
+            return [d.path for d in dirs]
+        finally:
+            session.close()
+
+    def add_scan_directory(self, path):
+        session = self.get_session()
+        try:
+            existing = session.query(ScanDirectory).filter(ScanDirectory.path == path).first()
+            if not existing:
+                session.add(ScanDirectory(path=path))
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            return False
+        finally:
+            session.close()
+
+    def remove_scan_directory(self, path):
+        session = self.get_session()
+        try:
+            d = session.query(ScanDirectory).filter(ScanDirectory.path == path).first()
+            if d:
+                session.delete(d)
+                session.commit()
+                return True
+            return False
+        finally:
+            session.close()
+
+    def clear_scan_directories(self):
+        session = self.get_session()
+        try:
+            session.query(ScanDirectory).delete()
+            session.commit()
         finally:
             session.close()

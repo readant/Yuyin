@@ -37,6 +37,30 @@
 
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">背景图片</h2>
+        </div>
+        <p class="card-hint" style="margin-bottom: 12px;">上传自定义背景图片，美化你的界面</p>
+
+        <!-- 上传区域 -->
+        <div class="bg-upload-area" id="upload-area">
+            <input type="file" id="bg-file-input" accept="image/*" style="display:none;">
+            <p>点击或拖拽图片到此处上传</p>
+            <p class="text-secondary" style="font-size: 12px;">支持 JPG、PNG、GIF 格式</p>
+        </div>
+
+        <!-- 当前背景预览 -->
+        <div id="current-bg-preview" class="bg-preview" style="display: none;">
+            <p class="form-label">当前背景：</p>
+            <img id="current-bg-img" class="bg-preview-img">
+            <button id="btn-clear-bg" class="btn btn-sm btn-danger">恢复默认</button>
+        </div>
+
+        <!-- 已上传图片列表 -->
+        <div id="uploaded-bgs" class="uploaded-bgs"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">练习统计</h2>
         </div>
         <div id="practice-stats" class="stats-grid">
@@ -75,6 +99,12 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('bg-file-input');
+    const currentBgPreview = document.getElementById('current-bg-preview');
+    const currentBgImg = document.getElementById('current-bg-img');
+    const uploadedBgs = document.getElementById('uploaded-bgs');
+
     // 加载设置
     const savedKey = localStorage.getItem('yuyin_default_key') || 'D';
     const savedFingering = localStorage.getItem('yuyin_default_fingering') || '5';
@@ -88,6 +118,128 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('default-fingering').addEventListener('change', (e) => {
         localStorage.setItem('yuyin_default_fingering', e.target.value);
     });
+
+    // 点击上传区域
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // 拖拽上传
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
+    });
+
+    // 选择文件
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+    });
+
+    // 上传文件
+    async function uploadFile(file) {
+        if (!file.type.startsWith('image/')) { alert('只能上传图片文件'); return; }
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const resp = await fetch('/api/background/upload', { method: 'POST', body: formData });
+            const data = await resp.json();
+            if (data.success) {
+                loadBackgrounds();
+                applyBackground(data.url);
+            } else {
+                alert('上传失败: ' + (data.error || ''));
+            }
+        } catch (e) {
+            alert('上传出错: ' + e.message);
+        }
+    }
+
+    // 加载背景列表
+    async function loadBackgrounds() {
+        try {
+            const resp = await fetch('/api/background');
+            const data = await resp.json();
+
+            // 显示当前背景
+            if (data.current) {
+                currentBgPreview.style.display = 'flex';
+                currentBgImg.src = data.current;
+            } else {
+                currentBgPreview.style.display = 'none';
+            }
+
+            // 显示已上传图片
+            if (data.uploads && data.uploads.length > 0) {
+                uploadedBgs.innerHTML = '<p class="form-label">已上传图片：</p>' +
+                    data.uploads.map(u => `
+                        <div class="bg-thumb-item ${data.current === u.url ? 'active' : ''}" onclick="selectBg('${u.url}')">
+                            <img src="${u.url}" class="bg-thumb-img">
+                            <button class="bg-thumb-delete" onclick="event.stopPropagation(); deleteBg('${u.filename}')">×</button>
+                        </div>
+                    `).join('');
+            } else {
+                uploadedBgs.innerHTML = '';
+            }
+        } catch (e) {
+            console.error('加载背景失败:', e);
+        }
+    }
+
+    // 选择背景
+    window.selectBg = async function(url) {
+        try {
+            await fetch('/api/background/select', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({path: url})
+            });
+            applyBackground(url);
+            loadBackgrounds();
+        } catch (e) {
+            alert('选择失败: ' + e.message);
+        }
+    };
+
+    // 删除背景
+    window.deleteBg = async function(filename) {
+        if (!confirm('确定要删除这张背景图片吗？')) return;
+        try {
+            await fetch('/api/background/' + filename, { method: 'DELETE' });
+            loadBackgrounds();
+        } catch (e) {
+            alert('删除失败: ' + e.message);
+        }
+    };
+
+    // 清除背景
+    document.getElementById('btn-clear-bg').addEventListener('click', async () => {
+        try {
+            await fetch('/api/background/select', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({path: ''})
+            });
+            applyBackground(null);
+            loadBackgrounds();
+        } catch (e) {
+            alert('清除失败: ' + e.message);
+        }
+    });
+
+    // 应用背景
+    function applyBackground(url) {
+        if (url) {
+            document.body.style.backgroundImage = `url(${url})`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+        } else {
+            document.body.style.backgroundImage = '';
+            document.body.style.backgroundColor = '';
+        }
+    }
 
     // 加载练习统计
     async function loadStats() {
@@ -103,7 +255,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 初始化
+    loadBackgrounds();
     loadStats();
+
+    // 页面加载时应用已保存的背景
+    fetch('/api/background').then(r => r.json()).then(data => {
+        if (data.current) applyBackground(data.current);
+    });
 });
 </script>
 {% endblock %}

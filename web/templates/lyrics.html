@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}余音 - 歌词{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">歌词编辑</h1>
+    <p class="page-subtitle">导入和编辑LRC歌词</p>
+</div>
+
+<div class="lyrics-layout">
+    <!-- 左侧：歌词编辑区 -->
+    <div class="lyrics-main">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">歌词内容</h2>
+                <span class="card-hint">支持LRC格式或每行一句</span>
+            </div>
+            <textarea id="lyrics-input" class="input lyrics-textarea" rows="15"
+                placeholder="LRC格式示例：
+[00:00.000]歌曲标题
+[00:05.000]第一句歌词
+[00:10.000]第二句歌词
+
+或简单格式（每行一句）："></textarea>
+            <div class="lyrics-actions">
+                <button id="btn-load" class="btn btn-primary">加载歌词</button>
+                <button id="btn-clear" class="btn btn-secondary">清空</button>
+                <button id="btn-export" class="btn btn-secondary">导出LRC</button>
+            </div>
+        </div>
+
+        <!-- 歌词行编辑 -->
+        <div class="card" id="line-editor-card" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title">编辑歌词行</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">时间（秒）</label>
+                    <input type="number" id="line-time" class="input" step="0.1" min="0">
+                </div>
+                <div class="form-group" style="flex: 2;">
+                    <label class="form-label">歌词文本</label>
+                    <input type="text" id="line-text" class="input">
+                </div>
+            </div>
+            <div style="margin-top: 8px;">
+                <button id="btn-save-line" class="btn btn-sm btn-primary">保存修改</button>
+                <button id="btn-delete-line" class="btn btn-sm btn-danger">删除此行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：歌词预览 -->
+    <div class="lyrics-sidebar">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">歌词预览</h2>
+            </div>
+            <div id="lyrics-preview" class="lyrics-preview">
+                <p class="placeholder-text">加载歌词后在此预览</p>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">使用说明</h2>
+            </div>
+            <div class="help-text">
+                <p><strong>LRC格式：</strong></p>
+                <p class="code">[00:05.000]歌词内容</p>
+                <p>时间格式：[分:秒.毫秒]</p>
+                <p style="margin-top: 8px;"><strong>简单格式：</strong></p>
+                <p>每行一句歌词，按顺序排列</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const lyricsInput = document.getElementById('lyrics-input');
+    const lyricsPreview = document.getElementById('lyrics-preview');
+    const lineEditorCard = document.getElementById('line-editor-card');
+    const lineTime = document.getElementById('line-time');
+    const lineText = document.getElementById('line-text');
+
+    let currentLyrics = [];
+    let selectedIndex = -1;
+
+    // 加载歌词
+    document.getElementById('btn-load').addEventListener('click', async () => {
+        const text = lyricsInput.value.trim();
+        if (!text) { alert('请输入歌词内容'); return; }
+
+        // 检测格式
+        const isLRC = text.match(/\[\d{2}:\d{2}\.\d{2,3}\]/);
+        const format = isLRC ? 'lrc' : 'simple';
+
+        try {
+            const resp = await fetch('/api/lyrics', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text, format})
+            });
+            const data = await resp.json();
+            if (data.success) {
+                loadLyricsPreview();
+            } else {
+                alert('加载失败');
+            }
+        } catch (e) {
+            alert('加载出错: ' + e.message);
+        }
+    });
+
+    // 清空歌词
+    document.getElementById('btn-clear').addEventListener('click', async () => {
+        if (!confirm('确定要清空歌词吗？')) return;
+        try {
+            await fetch('/api/lyrics', { method: 'DELETE' });
+            currentLyrics = [];
+            lyricsPreview.innerHTML = '<p class="placeholder-text">加载歌词后在此预览</p>';
+            lineEditorCard.style.display = 'none';
+        } catch (e) {
+            alert('清空失败: ' + e.message);
+        }
+    });
+
+    // 导出LRC
+    document.getElementById('btn-export').addEventListener('click', async () => {
+        try {
+            const resp = await fetch('/api/lyrics/export');
+            const data = await resp.json();
+            if (data.lrc) {
+                const blob = new Blob([data.lrc], {type: 'text/plain'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'lyrics.lrc';
+                a.click();
+            }
+        } catch (e) {
+            alert('导出失败: ' + e.message);
+        }
+    });
+
+    // 加载歌词预览
+    async function loadLyricsPreview() {
+        try {
+            const resp = await fetch('/api/lyrics');
+            const data = await resp.json();
+            currentLyrics = data.lyrics || [];
+
+            if (currentLyrics.length === 0) {
+                lyricsPreview.innerHTML = '<p class="placeholder-text">暂无歌词</p>';
+                return;
+            }
+
+            lyricsPreview.innerHTML = currentLyrics.map((l, i) => `
+                <div class="lyric-line" onclick="selectLine(${i})" data-index="${i}">
+                    <span class="lyric-time">${formatTime(l.time)}</span>
+                    <span class="lyric-text">${l.text}</span>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error('加载歌词失败:', e);
+        }
+    }
+
+    // 选择歌词行
+    window.selectLine = function(index) {
+        selectedIndex = index;
+        const line = currentLyrics[index];
+
+        // 更新选中样式
+        document.querySelectorAll('.lyric-line').forEach((el, i) => {
+            el.classList.toggle('selected', i === index);
+        });
+
+        // 显示编辑器
+        lineEditorCard.style.display = 'block';
+        lineTime.value = line.time.toFixed(2);
+        lineText.value = line.text;
+    };
+
+    // 保存修改
+    document.getElementById('btn-save-line').addEventListener('click', async () => {
+        if (selectedIndex < 0) return;
+        // 这里简化处理，重新加载歌词
+        alert('请重新加载歌词以应用修改');
+    });
+
+    // 删除行
+    document.getElementById('btn-delete-line').addEventListener('click', async () => {
+        if (selectedIndex < 0) return;
+        // 简化处理
+        alert('请在文本编辑区删除对应行后重新加载');
+    });
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds % 1) * 100);
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+    }
+
+    // 初始加载
+    loadLyricsPreview();
+});
+</script>
+{% endblock %}

@@ -14,9 +14,11 @@
     </div>
     <div class="toolbar-right">
         <button id="scan-btn" class="btn btn-primary">扫描文件夹</button>
+        <button id="clear-btn" class="btn btn-danger btn-sm">清空曲库</button>
     </div>
 </div>
 
+<div id="scan-dirs" class="scan-dirs"></div>
 <div id="scan-status" class="scan-status" style="display: none;"></div>
 
 <table class="table">
@@ -46,11 +48,29 @@
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const scanBtn = document.getElementById('scan-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const trackList = document.getElementById('track-list');
     const trackCount = document.getElementById('track-count');
     const scanStatus = document.getElementById('scan-status');
+    const scanDirs = document.getElementById('scan-dirs');
 
     let allTracks = [];
+
+    // 加载扫描目录
+    async function loadScanDirs() {
+        try {
+            const resp = await fetch('/api/scan-dirs');
+            const data = await resp.json();
+            if (data.directories && data.directories.length > 0) {
+                scanDirs.innerHTML = '<span class="scan-dirs-label">已扫描：</span>' +
+                    data.directories.map(d => `<span class="scan-dir-tag">${d}</span>`).join('');
+            } else {
+                scanDirs.innerHTML = '';
+            }
+        } catch (e) {
+            console.error('加载扫描目录失败:', e);
+        }
+    }
 
     // 加载曲目列表
     async function loadTracks() {
@@ -124,7 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 scanStatus.textContent = `扫描完成，找到 ${data.count} 首曲目`;
                 scanStatus.className = 'scan-status success';
-                loadTracks();
+    loadTracks();
+    loadScanDirs();
+                loadScanDirs();
             } else {
                 scanStatus.textContent = '扫描失败：' + (data.error || '未知错误');
                 scanStatus.className = 'scan-status error';
@@ -139,6 +161,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.playTrack = function(trackId) {
         window.location.href = '/player?track=' + trackId;
     };
+
+    // 清空曲库
+    clearBtn.addEventListener('click', async () => {
+        if (!confirm('确定要清空所有扫描目录和曲目吗？')) return;
+        try {
+            const resp = await fetch('/api/scan-dirs', { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.success) {
+                allTracks = [];
+                renderTracks([]);
+                loadScanDirs();
+            }
+        } catch (e) {
+            alert('清空失败: ' + e.message);
+        }
+    });
 
     // 格式化时长
     function formatDuration(seconds) {

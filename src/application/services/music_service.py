@@ -5,6 +5,7 @@ from typing import List, Optional
 from dataclasses import dataclass
 
 from ...shared.exceptions import AudioLoadError
+from ...domain.models.database import DatabaseManager
 
 
 @dataclass
@@ -32,6 +33,9 @@ class MusicLibrary:
         self._tracks: List[Track] = []
         self._scan_dirs: List[str] = []
         self._id_counter = 0
+        self._db = DatabaseManager()
+        # 启动时从数据库恢复扫描目录
+        self._load_scan_dirs()
 
     @property
     def tracks(self) -> List[Track]:
@@ -45,11 +49,27 @@ class MusicLibrary:
         """添加扫描目录"""
         if os.path.isdir(dir_path) and dir_path not in self._scan_dirs:
             self._scan_dirs.append(dir_path)
+            self._db.add_scan_directory(dir_path)
 
     def remove_scan_directory(self, dir_path: str):
         """移除扫描目录"""
         if dir_path in self._scan_dirs:
             self._scan_dirs.remove(dir_path)
+            self._db.remove_scan_directory(dir_path)
+
+    def clear_scan_directories(self):
+        """清空所有扫描目录"""
+        self._scan_dirs.clear()
+        self._db.clear_scan_directories()
+
+    def _load_scan_dirs(self):
+        """从数据库加载扫描目录"""
+        try:
+            dirs = self._db.get_scan_directories()
+            # 只加载仍然存在的目录
+            self._scan_dirs = [d for d in dirs if os.path.isdir(d)]
+        except Exception:
+            self._scan_dirs = []
 
     def get_scan_directories(self) -> List[str]:
         """获取扫描目录列表"""

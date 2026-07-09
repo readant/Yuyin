@@ -1635,6 +1635,16 @@ body {
 .metronome-area { margin-top: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
 
 .practice-fingering { text-align: center; padding: var(--space-md) 0; }
+
+/* 练习页节拍器 */
+.bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
+.bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }
+.dot-metro { width: 14px; height: 14px; border-radius: 50%; background: var(--border-color); transition: all 0.1s; }
+.dot-metro.active { background: var(--color-primary); transform: scale(1.3); }
+.tap-result { font-size: 13px; color: var(--text-secondary); line-height: 28px; }
+
+/* 指法速查小显示 */
+.fingering-display-small { text-align: center; font-size: 18px; letter-spacing: 4px; margin-top: 8px; padding: 8px; }
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: white;

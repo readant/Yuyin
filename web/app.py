@@ -427,6 +427,44 @@ async def get_recent_practices(limit: int = 10):
     return {"records": records}
 
 
+class PracticeRequest(BaseModel):
+    score_id: int = 0
+    score_title: str = ""
+    duration: float = 0
+    notes_played: int = 0
+    accuracy: float = 0
+
+
+@app.post("/api/practice/record")
+async def record_practice(req: PracticeRequest):
+    """记录一次练习"""
+    from src.application.services.zhudi_service import zhudi_service
+    zhudi_service.record_practice(
+        score_id=req.score_id,
+        score_title=req.score_title,
+        duration=req.duration,
+        notes_played=req.notes_played,
+        accuracy=req.accuracy
+    )
+    return {"success": True}
+
+
+@app.get("/api/practice/today")
+async def get_today_practice():
+    """获取今日练习统计"""
+    from src.application.services.zhudi_service import zhudi_service
+    import time
+    today_start = time.time() - (time.time() % 86400)
+    today_records = [r for r in zhudi_service.practice_records if r.timestamp >= today_start]
+    total_time = sum(r.duration for r in today_records)
+    total_sessions = len(today_records)
+    return {
+        "total_time": round(total_time / 60, 1),
+        "total_sessions": total_sessions,
+        "total_time_formatted": f"{round(total_time / 60, 1)}分钟"
+    }
+
+
 # ==================== 歌词API ====================
 
 from src.application.services.lyrics_service import lyrics_manager, LyricsParser

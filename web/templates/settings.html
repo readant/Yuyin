@@ -122,20 +122,20 @@
         </div>
         <div id="practice-stats" class="stats-grid">
             <div class="stat-item">
-                <div class="stat-value" id="stat-duration">0</div>
-                <div class="stat-label">练习时长（分钟）</div>
+                <div class="stat-value" id="stat-today-time">0</div>
+                <div class="stat-label">今日练习（分钟）</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="stat-count">0</div>
-                <div class="stat-label">练习次数</div>
+                <div class="stat-value" id="stat-today-sessions">0</div>
+                <div class="stat-label">今日次数</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="stat-accuracy">0%</div>
-                <div class="stat-label">平均准确率</div>
+                <div class="stat-value" id="stat-total-time">0</div>
+                <div class="stat-label">累计时长（分钟）</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="stat-notes">0</div>
-                <div class="stat-label">总音符数</div>
+                <div class="stat-value" id="stat-total-sessions">0</div>
+                <div class="stat-label">累计次数</div>
             </div>
         </div>
     </div>
@@ -335,12 +335,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================== 练习统计 ====================
     async function loadStats() {
         try {
-            const resp = await fetch('/api/practice/stats');
-            const data = await resp.json();
-            document.getElementById('stat-duration').textContent = data.total_duration || 0;
-            document.getElementById('stat-count').textContent = data.total_count || 0;
-            document.getElementById('stat-accuracy').textContent = (data.average_accuracy || 0) + '%';
-            document.getElementById('stat-notes').textContent = data.total_notes || 0;
+            // 加载今日统计
+            const todayResp = await fetch('/api/practice/today');
+            const todayData = await todayResp.json();
+            document.getElementById('stat-today-time').textContent = todayData.total_time || 0;
+            document.getElementById('stat-today-sessions').textContent = todayData.total_sessions || 0;
+
+            // 加载累计统计
+            const totalResp = await fetch('/api/practice/stats');
+            const totalData = await totalResp.json();
+            document.getElementById('stat-total-time').textContent = Math.round((totalData.total_time || 0) / 60);
+            document.getElementById('stat-total-sessions').textContent = totalData.total_sessions || 0;
         } catch (e) { console.error('加载练习统计失败:', e); }
     }
 

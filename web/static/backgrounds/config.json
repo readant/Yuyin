@@ -1,0 +1,15 @@
+{
+  "current": "/static/backgrounds/bg_2.png",
+  "uploads": [
+    {
+      "filename": "default.png",
+      "url": "/static/backgrounds/default.png",
+      "name": "笛箫两隔.png"
+    },
+    {
+      "filename": "bg_2.png",
+      "url": "/static/backgrounds/bg_2.png",
+      "name": "Image (2).png"
+    }
+  ]
+}

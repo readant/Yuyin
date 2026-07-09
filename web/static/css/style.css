@@ -391,6 +391,11 @@ body {
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     margin-bottom: var(--space-lg);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
@@ -478,6 +483,8 @@ body {
 .table {
     width: 100%;
     border-collapse: collapse;
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
 .table th {
@@ -489,16 +496,18 @@ body {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    background: var(--bg-panel);
 }
 
 .table td {
     padding: var(--space-md);
     border-bottom: 1px solid var(--border-light);
     color: var(--text-primary);
+    transition: background 0.15s;
 }
 
 .table tr:hover {
-    background-color: var(--bg-secondary);
+    background-color: rgba(139, 37, 0, 0.03);
 }
 
 /* 标签 */
@@ -1488,7 +1497,51 @@ body {
     color: var(--color-primary);
 }
 
-.ctrl-btn.active {
+.lyric-line-item {
+    display: flex;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: all 0.3s;
+    cursor: default;
+}
+
+.lyric-line-item.active {
+    background: rgba(139, 37, 0, 0.15);
+}
+
+.lyric-line-item.active .lyric-text {
+    color: var(--color-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.lyric-line-item .lyric-time {
+    color: var(--text-tertiary);
+    font-size: 12px;
+    min-width: 50px;
+    font-family: monospace;
+}
+
+.lyric-line-item .lyric-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.lyrics-scroll {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.lyrics-display {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: white;

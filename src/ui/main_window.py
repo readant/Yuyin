@@ -1,10 +1,11 @@
-"""主窗口"""
+"""主窗口 - 竹笛学习助手"""
 import math
 import random
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                            QStackedWidget, QLabel, QFrame)
-from PyQt6.QtCore import Qt, QSettings, QTimer
-from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QBrush, QFont
+                            QStackedWidget, QLabel, QFrame, QSplitter,
+                            QToolBar, QStatusBar, QMenu, QMenuBar)
+from PyQt6.QtCore import Qt, QSettings, QTimer, QSize
+from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QBrush, QFont, QIcon, QAction
 
 from .panels.player_panel import PlayerPanel
 from .panels.library_panel import LibraryPanel
@@ -20,7 +21,7 @@ from ..shared.i18n import texts
 
 
 class MainWindow(QMainWindow):
-    """主窗口"""
+    """主窗口 - 竹笛学习助手"""
 
     def __init__(self):
         super().__init__()
@@ -117,31 +118,273 @@ class MainWindow(QMainWindow):
         )
 
     def _init_ui(self):
-        self.setWindowTitle("余音 - 音乐播放器")
-        self.setMinimumSize(1100, 700)
+        """初始化界面"""
+        self.setWindowTitle("余音 - 竹笛学习助手")
+        self.setMinimumSize(1200, 750)
 
+        # 创建中心部件
         central = QWidget()
         central.setStyleSheet("background: transparent;")
         self.setCentralWidget(central)
-        main_layout = QHBoxLayout(central)
+
+        # 主布局
+        main_layout = QVBoxLayout(central)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # 导航栏
-        nav = self._create_nav_bar()
-        main_layout.addWidget(nav)
+        # 顶部标题栏
+        self._create_title_bar(main_layout)
+
+        # 中间内容区（使用分割器）
+        content_splitter = QSplitter(Qt.Orientation.Horizontal)
+        content_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: rgba(128,128,128,0.2);
+                width: 1px;
+            }
+        """)
+
+        # 左侧导航面板
+        self.nav_panel = self._create_nav_panel()
+        content_splitter.addWidget(self.nav_panel)
+
+        # 中央内容区
+        self.content_stack = QStackedWidget()
+        self.content_stack.setStyleSheet("background: transparent;")
+        content_splitter.addWidget(self.content_stack)
+
+        # 右侧信息面板
+        self.info_panel = self._create_info_panel()
+        content_splitter.addWidget(self.info_panel)
+
+        # 设置分割比例
+        content_splitter.setSizes([200, 700, 250])
+
+        main_layout.addWidget(content_splitter, 1)
+
+        # 底部播放器栏
+        self.player_bar = PlayerPanel()
+        self.player_bar.setFixedHeight(120)
+        main_layout.addWidget(self.player_bar)
+
+        # 初始化页面
+        self._init_pages()
+
+        # 状态栏
+        self.statusBar().showMessage("就绪")
+
+    def _create_title_bar(self, parent_layout):
+        """创建顶部标题栏"""
+        p = theme_manager.current_palette
+
+        title_bar = QFrame()
+        title_bar.setFixedHeight(50)
+        title_bar.setStyleSheet(f"""
+            QFrame {{
+                background-color: {p.surface};
+                border-bottom: 1px solid {p.border};
+            }}
+        """)
+
+        layout = QHBoxLayout(title_bar)
+        layout.setContentsMargins(20, 0, 20, 0)
+
+        # 应用标题
+        app_title = QLabel("余音")
+        app_title.setFont(QFont("FangSong", 18, QFont.Weight.Bold))
+        app_title.setStyleSheet(f"color: {p.primary};")
+        layout.addWidget(app_title)
+
+        # 副标题
+        subtitle = QLabel("竹笛学习助手")
+        subtitle.setStyleSheet(f"color: {p.text_secondary};")
+        layout.addWidget(subtitle)
+
+        layout.addStretch()
+
+        # 搜索框
+        search_frame = QFrame()
+        search_frame.setFixedWidth(250)
+        search_frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: {p.panel_bg};
+                border: 1px solid {p.border};
+                border-radius: 15px;
+            }}
+        """)
+        search_layout = QHBoxLayout(search_frame)
+        search_layout.setContentsMargins(10, 5, 10, 5)
+
+        search_icon = QLabel("🔍")
+        search_layout.addWidget(search_icon)
+
+        search_input = QLabel("寻曲...")
+        search_input.setStyleSheet(f"color: {p.text_secondary};")
+        search_layout.addWidget(search_input)
+
+        layout.addWidget(search_frame)
+
+        # 设置按钮
+        settings_btn = QPushButton("⚙")
+        settings_btn.setFixedSize(35, 35)
+        settings_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {p.text_secondary};
+                border: none;
+                border-radius: 17px;
+                font-size: 18px;
+            }}
+            QPushButton:hover {{
+                background-color: {p.surface};
+                color: {p.primary};
+            }}
+        """)
+        settings_btn.clicked.connect(lambda: self._switch_page(5))
+        layout.addWidget(settings_btn)
+
+        parent_layout.addWidget(title_bar)
+
+    def _create_nav_panel(self) -> QWidget:
+        """创建左侧导航面板"""
+        p = theme_manager.current_palette
+
+        nav = QFrame()
+        nav.setStyleSheet(f"""
+            QFrame {{
+                background-color: {p.panel_bg};
+                border-right: 1px solid {p.border};
+            }}
+        """)
+
+        layout = QVBoxLayout(nav)
+        layout.setContentsMargins(10, 15, 10, 15)
+        layout.setSpacing(5)
+
+        # 导航标签
+        nav_label = QLabel("导航")
+        nav_label.setStyleSheet(f"color: {p.text_secondary}; font-size: 11px;")
+        layout.addWidget(nav_label)
+
+        layout.addSpacing(5)
+
+        self.nav_buttons = []
+        pages = [
+            (texts.NAV_PLAYER, 0),
+            (texts.NAV_LIBRARY, 1),
+            (texts.NAV_FINGERING, 2),
+            (texts.NAV_LYRICS, 3),
+            (texts.NAV_RHYTHM, 4),
+            (texts.NAV_SETTINGS, 5),
+        ]
+
+        for text, index in pages:
+            btn = NavButton(text, text)
+            btn.clicked.connect(lambda checked, i=index: self._switch_page(i))
+            layout.addWidget(btn)
+            self.nav_buttons.append(btn)
+
+        layout.addStretch()
+
+        # 版本信息
+        version_label = QLabel("v2.0")
+        version_label.setStyleSheet(f"color: {p.text_light}; font-size: 10px;")
+        layout.addWidget(version_label)
+
+        self.nav_buttons[0].set_active(True)
+
+        return nav
+
+    def _create_info_panel(self) -> QWidget:
+        """创建右侧信息面板"""
+        p = theme_manager.current_palette
+
+        panel = QFrame()
+        panel.setStyleSheet(f"""
+            QFrame {{
+                background-color: {p.panel_bg};
+                border-left: 1px solid {p.border};
+            }}
+        """)
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+
+        # 当前曲目信息
+        info_label = QLabel("当前曲目")
+        info_label.setStyleSheet(f"color: {p.text_secondary}; font-size: 11px;")
+        layout.addWidget(info_label)
+
+        self.current_track_label = QLabel("未播放")
+        self.current_track_label.setFont(QFont("FangSong", 14, QFont.Weight.Bold))
+        self.current_track_label.setStyleSheet(f"color: {p.text};")
+        layout.addWidget(self.current_track_label)
+
+        self.current_artist_label = QLabel("")
+        self.current_artist_label.setStyleSheet(f"color: {p.text_secondary};")
+        layout.addWidget(self.current_artist_label)
 
         # 分隔线
         sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet("color: rgba(128,128,128,0.3);")
-        main_layout.addWidget(sep)
+        sep.setFrameShape(QFrame.Shape.HLine)
+        sep.setStyleSheet(f"color: {p.border};")
+        layout.addWidget(sep)
 
-        # 内容区
-        self.content_stack = QStackedWidget()
-        self.content_stack.setStyleSheet("background: transparent;")
-        main_layout.addWidget(self.content_stack, 1)
+        # 指法信息
+        fingering_label = QLabel("指法信息")
+        fingering_label.setStyleSheet(f"color: {p.text_secondary}; font-size: 11px;")
+        layout.addWidget(fingering_label)
 
+        self.current_fingering_label = QLabel("筒音作5")
+        self.current_fingering_label.setStyleSheet(f"color: {p.text};")
+        layout.addWidget(self.current_fingering_label)
+
+        # 练习统计
+        practice_label = QLabel("练习统计")
+        practice_label.setStyleSheet(f"color: {p.text_secondary}; font-size: 11px;")
+        layout.addWidget(practice_label)
+
+        self.practice_stats_label = QLabel("今日练习: 0分钟")
+        self.practice_stats_label.setStyleSheet(f"color: {p.text};")
+        layout.addWidget(self.practice_stats_label)
+
+        layout.addStretch()
+
+        # 快捷操作
+        quick_label = QLabel("快捷操作")
+        quick_label.setStyleSheet(f"color: {p.text_secondary}; font-size: 11px;")
+        layout.addWidget(quick_label)
+
+        quick_btns = QHBoxLayout()
+        quick_btns.setSpacing(8)
+
+        for text in ["导入简谱", "导入音频"]:
+            btn = QPushButton(text)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {p.surface};
+                    color: {p.text};
+                    border: 1px solid {p.border};
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 11px;
+                }}
+                QPushButton:hover {{
+                    background-color: {p.primary};
+                    color: {p.paper};
+                    border-color: {p.primary};
+                }}
+            """)
+            quick_btns.addWidget(btn)
+
+        layout.addLayout(quick_btns)
+
+        return panel
+
+    def _init_pages(self):
+        """初始化页面"""
+        # 创建页面
         self.player_page = PlayerPanel()
         self.library_page = LibraryPanel()
         self.fingering_page = FingeringPanel()
@@ -149,6 +392,7 @@ class MainWindow(QMainWindow):
         self.rhythm_page = RhythmPanel()
         self.settings_page = SettingsPanel()
 
+        # 添加到内容栈
         self.content_stack.addWidget(self.player_page)
         self.content_stack.addWidget(self.library_page)
         self.content_stack.addWidget(self.fingering_page)
@@ -160,127 +404,32 @@ class MainWindow(QMainWindow):
         self.transition_manager = TransitionManager(self.content_stack)
         self.transition_manager.set_transition('ink')
 
-        # 学习面板
-        self.learning_panel = self._create_learning_panel()
-        self.learning_panel.hide()
-        main_layout.addWidget(self.learning_panel)
-
-        self.statusBar().showMessage("就绪")
-
-    def _create_nav_bar(self) -> QWidget:
-        p = theme_manager.current_palette
-
-        nav = QFrame()
-        nav.setFixedWidth(80)
-        nav.setStyleSheet(f"""
-            QFrame {{
-                background-color: {p.surface};
-                border-right: 1px solid {p.border};
-                border-radius: 0;
-            }}
-        """)
-
-        layout = QVBoxLayout(nav)
-        layout.setContentsMargins(0, 20, 0, 20)
-        layout.setSpacing(8)
-
-        # Logo - 余字印章风格
-        logo = QLabel("余")
-        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo.setFont(QFont("FangSong", 20, QFont.Weight.Bold))
-        logo.setStyleSheet(f"""
-            color: {p.primary};
-            padding: 10px;
-            border: 2px solid {p.primary};
-            border-radius: 5px;
-            background-color: {p.panel_bg};
-        """)
-        layout.addWidget(logo)
-
-        layout.addSpacing(15)
-
-        self.nav_buttons = []
-        pages = [
-            (texts.NAV_PLAYER, "P", 0),
-            (texts.NAV_LIBRARY, "L", 1),
-            (texts.NAV_FINGERING, "F", 2),
-            (texts.NAV_LYRICS, "G", 3),
-            (texts.NAV_RHYTHM, "R", 4),
-            (texts.NAV_SETTINGS, "S", 5),
-        ]
-
-        for text, icon, index in pages:
-            btn = NavButton(icon, text)
-            btn.clicked.connect(lambda checked, i=index: self._switch_page(i))
-            layout.addWidget(btn)
-            self.nav_buttons.append(btn)
-
-        layout.addStretch()
-
-        self.nav_buttons[0].set_active(True)
-
-        return nav
-
-    def _create_learning_panel(self) -> QFrame:
-        panel = QFrame()
-        panel.setFixedWidth(200)
-        panel.setStyleSheet("""
-            QFrame {
-                background-color: rgba(0,0,0,0.05);
-                border-left: 1px solid rgba(128,128,128,0.2);
-            }
-        """)
-
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(10, 15, 10, 15)
-
-        title = QLabel("学习模式")
-        title.setFont(title.font())
-        layout.addWidget(title)
-
-        layout.addSpacing(10)
-
-        layout.addWidget(QLabel("当前音符:"))
-        self.note_display = QLabel("--")
-        self.note_display.setFont(self.note_display.font())
-        self.note_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.note_display.setStyleSheet("padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;")
-        layout.addWidget(self.note_display)
-
-        layout.addSpacing(10)
-
-        layout.addWidget(QLabel("指法提示:"))
-        self.fingering_display = QLabel("------")
-        self.fingering_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.fingering_display)
-
-        layout.addStretch()
-
-        return panel
-
     def _switch_page(self, index: int):
+        """切换页面"""
         self.transition_manager.transition_to(index)
         for i, btn in enumerate(self.nav_buttons):
             btn.set_active(i == index)
 
     def _connect_signals(self):
-        self.player_page.learning_mode_changed.connect(self._toggle_learning_panel)
-        self.player_page.note_changed.connect(self._on_note_changed)
-
-    def _toggle_learning_panel(self, enabled: bool):
-        self.learning_panel.setVisible(enabled)
-
-    def _on_note_changed(self, note: str):
-        self.note_display.setText(note if note else "--")
+        """连接信号"""
+        pass
 
     def _save_layout(self):
+        """保存布局"""
         self.settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("windowState", self.saveState())
 
     def _restore_layout(self):
+        """恢复布局"""
         geometry = self.settings.value("geometry")
         if geometry:
             self.restoreGeometry(geometry)
 
+        window_state = self.settings.value("windowState")
+        if window_state:
+            self.restoreState(window_state)
+
     def closeEvent(self, event):
+        """关闭事件"""
         self._save_layout()
         super().closeEvent(event)

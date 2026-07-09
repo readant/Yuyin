@@ -3,7 +3,7 @@ import math
 import random
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                             QStackedWidget, QLabel, QFrame, QSplitter,
-                            QToolBar, QStatusBar, QMenu, QMenuBar)
+                            QToolBar, QStatusBar, QMenu, QMenuBar, QPushButton)
 from PyQt6.QtCore import Qt, QSettings, QTimer, QSize
 from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QBrush, QFont, QIcon, QAction
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}余音 - 竹笛学习助手{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边导航 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-mark">余</div>
+                    <div>
+                        <div class="logo-text">余音</div>
+                        <div class="logo-subtitle">竹笛学习助手</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-links">
+                <a href="/" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                    <span class="nav-icon">~</span>
+                    <span class="nav-label">首页</span>
+                </a>
+                <a href="/listen" class="nav-item {% if request.endpoint == 'listen' %}active{% endif %}">
+                    <span class="nav-icon">></span>
+                    <span class="nav-label">欣赏</span>
+                </a>
+                <a href="/player" class="nav-item {% if request.endpoint == 'player' %}active{% endif %}">
+                    <span class="nav-icon">*</span>
+                    <span class="nav-label">播放器</span>
+                </a>
+                <a href="/library" class="nav-item {% if request.endpoint == 'library' %}active{% endif %}">
+                    <span class="nav-icon">=</span>
+                    <span class="nav-label">曲库</span>
+                </a>
+                <a href="/fingering" class="nav-item {% if request.endpoint == 'fingering' %}active{% endif %}">
+                    <span class="nav-icon">*</span>
+                    <span class="nav-label">指法</span>
+                </a>
+                <a href="/settings" class="nav-item {% if request.endpoint == 'settings_page' %}active{% endif %}">
+                    <span class="nav-icon">#</span>
+                    <span class="nav-label">设置</span>
+                </a>
+            </div>
+
+            <div class="sidebar-footer">
+                <span class="version">v2.0</span>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- 隐藏的音频元素 -->
+    <audio id="audio-player" preload="auto"></audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/player.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

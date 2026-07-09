@@ -1,8 +1,4 @@
-# 余音 - 主依赖列表
-
-# 启动器（PyQt6）
-PyQt6>=6.5.0
-PyQt6-WebEngine>=6.5.0
+# 余音 Web端依赖
 
 # Web框架
 fastapi>=0.104.0

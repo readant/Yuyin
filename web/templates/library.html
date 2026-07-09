@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}曲库 - 余音{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">曲库</h1>
+    <p class="page-subtitle">管理你的音乐收藏</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <input type="text" class="input" id="search-input" placeholder="搜索歌曲..." style="width: 300px;">
+        <button class="btn btn-primary" onclick="scanDirectory()">扫描文件夹</button>
+    </div>
+
+    <div style="display: flex; gap: var(--space-sm); margin-bottom: var(--space-md);">
+        <span class="tag tag-active" onclick="filterTracks('all')">全部</span>
+        <span class="tag tag-inactive" onclick="filterTracks('favorite')">收藏</span>
+        <span class="tag tag-inactive" onclick="filterTracks('recent')">最近播放</span>
+    </div>
+
+    <div id="scan-status" style="display: none; padding: var(--space-sm) var(--space-md); background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+        <span id="scan-text">扫描中...</span>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th>曲目</th>
+                <th>艺术家</th>
+                <th>时长</th>
+                <th style="width: 100px;">操作</th>
+            </tr>
+        </thead>
+        <tbody id="track-list">
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                    暂无歌曲，请扫描文件夹添加音乐
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="track-count" style="margin-top: var(--space-md); color: var(--text-secondary); font-size: 12px;">
+        共 0 首歌曲
+    </div>
+</div>
+
+<script>
+let allTracks = [];
+
+function scanDirectory() {
+    const path = prompt("请输入音乐文件夹路径:");
+    if (!path) return;
+
+    const statusEl = document.getElementById('scan-status');
+    const textEl = document.getElementById('scan-text');
+
+    statusEl.style.display = 'block';
+    textEl.textContent = '正在扫描...';
+
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: path })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            textEl.textContent = `扫描完成，找到 ${data.count} 首歌曲`;
+            loadTracks();
+        } else {
+            textEl.textContent = '扫描失败: ' + (data.error || '未知错误');
+        }
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+    })
+    .catch(err => {
+        textEl.textContent = '扫描失败: ' + err.message;
+        setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+    });
+}
+
+function loadTracks() {
+    fetch('/api/tracks')
+    .then(response => response.json())
+    .then(tracks => {
+        allTracks = tracks;
+        renderTracks(tracks);
+    });
+}
+
+function renderTracks(tracks) {
+    const tbody = document.getElementById('track-list');
+    const countEl = document.getElementById('track-count');
+
+    if (tracks.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                    暂无歌曲，请扫描文件夹添加音乐
+                </td>
+            </tr>
+        `;
+        countEl.textContent = '共 0 首歌曲';
+        return;
+    }
+
+    tbody.innerHTML = tracks.map((track, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${track.title}</td>
+            <td>${track.artist}</td>
+            <td>${formatDuration(track.duration)}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick="playTrack(${track.id})">播放</button>
+            </td>
+        </tr>
+    `).join('');
+
+    countEl.textContent = `共 ${tracks.length} 首歌曲`;
+}
+
+document.getElementById('search-input').addEventListener('input', function() {
+    const keyword = this.value.toLowerCase();
+    const filtered = allTracks.filter(track =>
+        track.title.toLowerCase().includes(keyword) ||
+        track.artist.toLowerCase().includes(keyword)
+    );
+    renderTracks(filtered);
+});
+
+function filterTracks(type) {
+    document.querySelectorAll('.tag').forEach(tag => {
+        tag.className = 'tag tag-inactive';
+    });
+    event.target.className = 'tag tag-active';
+    renderTracks(allTracks);
+}
+
+function playTrack(trackId) {
+    if (typeof window.playTrackById === 'function') {
+        window.playTrackById(trackId);
+    } else {
+        // 备用方案
+        const audio = document.getElementById('audio-player');
+        if (audio) {
+            audio.src = '/api/serve-audio/' + trackId;
+            audio.load();
+            audio.play();
+            document.getElementById('play-btn').textContent = '||';
+            fetch('/api/track/' + trackId)
+                .then(function(r) { return r.json(); })
+                .then(function(track) {
+                    document.getElementById('track-title').textContent = track.title;
+                    document.getElementById('track-artist').textContent = track.artist;
+                });
+        }
+    }
+}
+
+function formatDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+document.addEventListener('DOMContentLoaded', loadTracks);
+</script>
+{% endblock %}

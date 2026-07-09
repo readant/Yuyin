@@ -14,6 +14,10 @@
         <div class="card">
             <div class="card-header"><h2 class="card-title">选择简谱</h2></div>
             <div id="score-select" class="score-select-list"><p class="placeholder-text">加载中...</p></div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <input type="file" id="audio-file-input" accept="audio/*" style="display:none;">
+                <button class="btn btn-sm btn-secondary" onclick="document.getElementById('audio-file-input').click()">从音频生成</button>
+            </div>
         </div>
         <div class="card" id="score-preview-card" style="display: none;">
             <div class="card-header"><h2 class="card-title" id="preview-title">简谱</h2></div>
@@ -290,6 +294,34 @@ document.addEventListener('DOMContentLoaded', () => {
             holes[i].textContent = f[i] === 'b' ? '●' : (f[i] === 'h' ? '◐' : '○');
         }
     }
+
+    // ============ 从音频生成简谱 ============
+    document.getElementById('audio-file-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const r = await fetch('/api/audio/analyze', { method: 'POST', body: formData });
+            const d = await r.json();
+            if (d.success && d.score_text) {
+                // 保存为简谱
+                const saveR = await fetch('/api/score', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title: file.name.replace(/\.[^.]+$/, ''), notes_data: d.score_text })
+                });
+                const saveD = await saveR.json();
+                if (saveD.success) {
+                    location.reload();
+                }
+            } else {
+                alert('分析失败: ' + (d.error || '无法识别'));
+            }
+        } catch (er) { alert('分析出错: ' + er.message); }
+    });
 
     // 初始化
     loadScores();

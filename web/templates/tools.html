@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}余音 - 音频工具{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">音频工具</h1>
+    <p class="page-subtitle">上传音频，可视化作曲或分析</p>
+</div>
+
+<div class="tools-layout">
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">上传音频</h2></div>
+        <div class="tools-upload">
+            <input type="file" id="file-input" accept="audio/*" style="display:none;">
+            <div class="bg-upload-area" id="upload-area">点击选择音频文件<br><small>支持 WAV, MP3, FLAC</small></div>
+            <p id="file-name" class="file-name"></p>
+        </div>
+    </div>
+
+    <div class="card" id="waveform-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">波形图</h2></div>
+        <canvas id="waveform-canvas" width="800" height="150" class="waveform"></canvas>
+    </div>
+
+    <div class="card" id="tools-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">音频处理</h2></div>
+        <div class="tools-buttons">
+            <button class="btn btn-secondary" onclick="trimAudio()">裁剪（首尾10%）</button>
+            <button class="btn btn-secondary" onclick="normalizeAudio()">归一化音量</button>
+            <button class="btn btn-primary" onclick="analyzeAudio()">生成简谱</button>
+        </div>
+        <div id="tools-result" class="tools-result"></div>
+    </div>
+
+    <div class="card" id="score-result-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">识别结果</h2></div>
+        <div class="score-text-result" id="score-text"></div>
+        <div class="tools-buttons" style="margin-top: 12px;">
+            <button class="btn btn-primary" onclick="saveToEditor()">保存到简谱编辑器</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentFile = null, scoreText = '';
+
+document.getElementById('upload-area').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files.length > 0) {
+        currentFile = e.target.files[0];
+        document.getElementById('file-name').textContent = currentFile.name;
+        drawWaveform();
+        document.getElementById('waveform-card').style.display = 'block';
+        document.getElementById('tools-card').style.display = 'block';
+    }
+});
+
+async function drawWaveform() {
+    const canvas = document.getElementById('waveform-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const arrayBuffer = await currentFile.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    const data = audioBuffer.getChannelData(0);
+    const step = Math.ceil(data.length / canvas.width);
+
+    ctx.fillStyle = '#8B2500';
+    for (let i = 0; i < canvas.width; i++) {
+        let max = 0;
+        for (let j = 0; j < step; j++) {
+            const idx = i * step + j;
+            if (idx < data.length) max = Math.max(max, Math.abs(data[idx]));
+        }
+        const h = max * (canvas.height / 2);
+        ctx.fillRect(i, canvas.height / 2 - h, 1, Math.max(1, h * 2));
+    }
+}
+
+async function trimAudio() {
+    if (!currentFile) return;
+    const formData = new FormData();
+    formData.append('file', currentFile);
+    formData.append('start', '0');
+    formData.append('end', '60');
+    const r = await fetch('/api/audio/trim', { method: 'POST', body: formData });
+    const d = await r.json();
+    document.getElementById('tools-result').innerHTML = d.success
+        ? `<a href="${d.url}" download>下载裁剪后的音频</a>`
+        : `失败: ${d.error}`;
+}
+
+async function normalizeAudio() {
+    if (!currentFile) return;
+    const formData = new FormData();
+    formData.append('file', currentFile);
+    const r = await fetch('/api/audio/normalize', { method: 'POST', body: formData });
+    const d = await r.json();
+    document.getElementById('tools-result').innerHTML = d.success
+        ? `<a href="${d.url}" download>下载归一化后的音频</a>`
+        : `失败: ${d.error}`;
+}
+
+async function analyzeAudio() {
+    if (!currentFile) return;
+    const formData = new FormData();
+    formData.append('file', currentFile);
+    const r = await fetch('/api/audio/analyze', { method: 'POST', body: formData });
+    const d = await r.json();
+    if (d.success) {
+        scoreText = d.score_text;
+        document.getElementById('score-result-card').style.display = 'block';
+        document.getElementById('score-text').textContent = scoreText;
+    } else {
+        alert('分析失败: ' + d.error);
+    }
+}
+
+async function saveToEditor() {
+    if (!scoreText) return;
+    try {
+        const r = await fetch('/api/score', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ title: currentFile.name.replace(/\.[^.]+$/, ''), notes_data: scoreText })
+        });
+        const d = await r.json();
+        if (d.success) window.location.href = '/editor';
+        else alert('保存失败');
+    } catch (e) { alert('保存出错: ' + e.message); }
+}
+</script>
+{% endblock %}

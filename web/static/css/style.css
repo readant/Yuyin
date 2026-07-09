@@ -1636,6 +1636,31 @@ body {
 
 .practice-fingering { text-align: center; padding: var(--space-md) 0; }
 
+/* ==================== 音频工具 ==================== */
+.tools-layout { max-width: 800px; }
+.tools-upload { margin-bottom: var(--space-md); }
+.file-name { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+
+.waveform {
+    width: 100%;
+    border-radius: var(--radius-md);
+    background: var(--bg-panel);
+}
+
+.tools-buttons { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.tools-result { margin-top: var(--space-md); font-size: 14px; }
+.tools-result a { color: var(--color-primary); }
+
+.score-text-result {
+    padding: var(--space-md);
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+    font-family: monospace;
+    font-size: 20px;
+    letter-spacing: 2px;
+    word-break: break-all;
+}
+
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
 .bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }

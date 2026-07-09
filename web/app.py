@@ -111,6 +111,12 @@ async def rhythm_page(request: Request):
     return templates.TemplateResponse(request, "rhythm.html")
 
 
+@app.get("/tools", response_class=HTMLResponse)
+async def tools_page(request: Request):
+    """音频工具"""
+    return templates.TemplateResponse(request, "tools.html")
+
+
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """设置页面"""
@@ -564,3 +570,94 @@ async def tap_rhythm():
 async def get_rhythm_stats():
     """获取节奏练习统计"""
     return rhythm_coach.get_practice_stats()
+
+
+# ==================== 音频工具API ====================
+
+AUDIO_TOOLS_DIR = os.path.join(os.path.dirname(__file__), "static", "audio")
+os.makedirs(AUDIO_TOOLS_DIR, exist_ok=True)
+
+@app.post("/api/audio/analyze")
+async def analyze_audio(file: UploadFile = File(...)):
+    """上传音频文件，分析并生成简谱"""
+    import librosa
+    import numpy as np
+
+    filepath = os.path.join(AUDIO_TOOLS_DIR, file.filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        y, sr = librosa.load(filepath, sr=22050)
+        f0, _, _ = librosa.pyin(y, fmin=librosa.note_to_hz('C3'), fmax=librosa.note_to_hz('C6'), sr=sr)
+        times = librosa.times_like(f0, sr=sr)
+
+        notes = []
+        last_note = None
+        for t, freq in zip(times, f0):
+            if np.isnan(freq) or freq < 50:
+                continue
+            note_name = librosa.hz_to_note(freq)
+            # 映射到简谱
+            note_map = {'C':'1','D':'2','E':'3','F':'4','G':'5','A':'6','B':'7'}
+            simple = note_name[:1] + note_name[1:].replace('#','') if note_name else '1'
+            pitch_class = note_name[0] if note_name else 'C'
+            simple_note = note_map.get(pitch_class, '1')
+
+            if simple_note != last_note:
+                notes.append({"note": simple_note, "time": round(t, 2), "freq": round(freq, 1)})
+                last_note = simple_note
+
+        # 生成简谱文本
+        score_text = " ".join(n["note"] for n in notes)
+        return {"success": True, "notes": notes, "score_text": score_text}
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+@app.post("/api/audio/trim")
+async def trim_audio(file: UploadFile = File(...), start: float = 0, end: float = 10):
+    """裁剪音频"""
+    import soundfile as sf
+    import numpy as np
+
+    filepath = os.path.join(AUDIO_TOOLS_DIR, file.filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        y, sr = sf.read(filepath)
+        start_idx = int(start * sr)
+        end_idx = int(end * sr)
+        trimmed = y[start_idx:end_idx]
+
+        out_name = f"trimmed_{file.filename}"
+        out_path = os.path.join(AUDIO_TOOLS_DIR, out_name)
+        sf.write(out_path, trimmed, sr)
+        return {"success": True, "url": f"/static/audio/{out_name}"}
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+@app.post("/api/audio/normalize")
+async def normalize_audio(file: UploadFile = File(...)):
+    """归一化音频"""
+    import soundfile as sf
+    import numpy as np
+
+    filepath = os.path.join(AUDIO_TOOLS_DIR, file.filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        y, sr = sf.read(filepath)
+        peak = np.max(np.abs(y))
+        if peak > 0:
+            y = y / peak * 0.9
+
+        out_name = f"normalized_{file.filename}"
+        out_path = os.path.join(AUDIO_TOOLS_DIR, out_name)
+        sf.write(out_path, y, sr)
+        return {"success": True, "url": f"/static/audio/{out_name}"}
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)

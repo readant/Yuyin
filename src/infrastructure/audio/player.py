@@ -2,46 +2,98 @@
 import os
 import numpy as np
 from PyQt6.QtCore import QObject, pyqtSignal, QThread, QTimer
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput, QMediaDevices
 from PyQt6.QtCore import QUrl
 import sounddevice as sd
+
+from .device_detector import audio_device_detector, AudioDeviceType
 
 
 class AudioPlayer(QObject):
     """音频播放器"""
-    
+
     # 信号
     position_changed = pyqtSignal(float)  # 当前位置(秒)
     duration_changed = pyqtSignal(float)  # 总时长(秒)
     state_changed = pyqtSignal(str)  # 状态: playing, paused, stopped
     playback_finished = pyqtSignal()
-    
+    device_changed = pyqtSignal(str)  # 设备变化信号
+
     def __init__(self):
         super().__init__()
-        
+
         self.player = QMediaPlayer()
         self.audio_output = QAudioOutput()
+        self.audio_output.setVolume(1.0)  # 设置默认音量为最大
+
+        # 连接音频设备检测器
+        audio_device_detector.device_changed.connect(self._on_device_changed)
+
+        # 设置音频输出设备为系统默认
+        self._set_default_audio_device()
+
         self.player.setAudioOutput(self.audio_output)
-        
+
         # 连接信号
         self.player.positionChanged.connect(self._on_position_changed)
         self.player.durationChanged.connect(self._on_duration_changed)
         self.player.playbackStateChanged.connect(self._on_state_changed)
         self.player.mediaStatusChanged.connect(self._on_media_status)
-        
+
         # 进度更新定时器
         self.progress_timer = QTimer()
         self.progress_timer.setInterval(50)  # 50ms更新一次
         self.progress_timer.timeout.connect(self._update_progress)
-        
+
         # 状态
         self.current_file = None
         self.duration = 0
         self.is_playing = False
-        
+
         # 音符时间映射
         self.note_timeline = []
         self.current_note_index = 0
+
+    def _set_default_audio_device(self):
+        """设置默认音频输出设备"""
+        try:
+            # 使用音频设备检测器获取默认设备
+            device = audio_device_detector.current_device
+            if device and device.device:
+                self.audio_output.setDevice(device.device)
+                print(f"使用音频设备: {device.name} ({device.device_type.value})")
+            else:
+                # 使用系统默认音频输出设备
+                default_device = QMediaDevices.defaultAudioOutput()
+                if not default_device.isNull():
+                    self.audio_output.setDevice(default_device)
+                    print(f"使用音频设备: {default_device.description()}")
+                else:
+                    print("警告: 未找到默认音频输出设备")
+        except Exception as e:
+            print(f"设置音频设备时出错: {e}")
+
+    def _on_device_changed(self, device_name: str):
+        """音频设备变化回调"""
+        device = audio_device_detector.current_device
+        if device:
+            self.audio_output.setDevice(device.device)
+            print(f"音频设备切换: {device.name} ({device.device_type.value})")
+            self.device_changed.emit(device.name)
+
+    def get_audio_devices(self):
+        """获取可用的音频输出设备列表"""
+        devices = []
+        for device in QMediaDevices.audioOutputs():
+            devices.append({
+                'name': device.description(),
+                'device': device
+            })
+        return devices
+
+    def set_audio_device(self, device):
+        """设置音频输出设备"""
+        self.audio_output.setDevice(device)
     
     def load_file(self, file_path: str):
         """加载音频文件"""

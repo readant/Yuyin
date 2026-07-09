@@ -10,9 +10,13 @@ from ..components.vinyl import VinylWidget
 from ..components.spectrum import SpectrumWidget
 from ..components.progress import ProgressWidget
 from ..components.lyrics import LyricsWidget
+from ..components.chinese_controls import QingButton, ScrollProgressBar, PluckVolumeSlider
 from ..theme import theme_manager
 from ...infrastructure.audio.player import AudioPlayer
+from ...infrastructure.audio.device_detector import audio_device_detector
 from ...application.services.music_service import Track
+from ...application.services.fade_service import fade_controller
+from ...shared.i18n import texts
 
 
 class ControlButton(QPushButton):
@@ -111,6 +115,13 @@ class PlayerPanel(QWidget):
 
         top_bar.addStretch()
 
+        # 音频设备状态
+        self.device_label = QLabel()
+        self.device_label.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
+        self._update_device_display()
+        audio_device_detector.device_changed.connect(lambda: self._update_device_display())
+        top_bar.addWidget(self.device_label)
+
         # 视图切换按钮
         self.view_toggle = QPushButton("📜 歌词")
         self.view_toggle.setCheckable(True)
@@ -155,12 +166,12 @@ class PlayerPanel(QWidget):
         right.setContentsMargins(0, 20, 0, 0)
 
         # 曲目信息
-        self.title_label = QLabel("未播放")
+        self.title_label = QLabel(texts.PLAYER_NO_PLAY)
         self.title_label.setFont(QFont("FangSong", 24, QFont.Weight.Bold))
         self.title_label.setStyleSheet(f"color: {p.text}; background: transparent;")
         right.addWidget(self.title_label)
 
-        self.artist_label = QLabel("选择一首歌曲开始播放")
+        self.artist_label = QLabel(texts.PLAYER_SELECT_SONG)
         self.artist_label.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
         right.addWidget(self.artist_label)
 
@@ -168,7 +179,13 @@ class PlayerPanel(QWidget):
 
         # 频谱
         spec_container = QWidget()
-        spec_container.setStyleSheet("QWidget { background: rgba(0,0,0,0.1); border-radius: 10px; }")
+        spec_container.setStyleSheet(f"""
+            QWidget {{
+                background-color: {p.panel_bg};
+                border: 1px solid {p.border};
+                border-radius: 8px;
+            }}
+        """)
         spec_layout = QVBoxLayout(spec_container)
         spec_layout.setContentsMargins(10, 5, 10, 5)
         self.spectrum = SpectrumWidget()
@@ -176,23 +193,24 @@ class PlayerPanel(QWidget):
         right.addWidget(spec_container)
 
         # 进度条
-        prog_container = QWidget()
-        prog_container.setStyleSheet("background: transparent;")
-        prog_layout = QVBoxLayout(prog_container)
-        prog_layout.setContentsMargins(0, 5, 0, 0)
+        # 卷轴进度条
+        self.progress = ScrollProgressBar()
+        self.progress.value_changed.connect(self._seek)
+        right.addWidget(self.progress)
 
+        # 时间显示
+        time_layout = QHBoxLayout()
         self.time_current = QLabel("00:00")
         self.time_current.setStyleSheet(f"color: {p.text_secondary}; font-family: Consolas; font-size: 11px; background: transparent;")
-        prog_layout.addWidget(self.time_current)
+        time_layout.addWidget(self.time_current)
 
-        self.progress = ProgressWidget()
-        prog_layout.addWidget(self.progress)
+        time_layout.addStretch()
 
         self.time_total = QLabel("00:00")
         self.time_total.setStyleSheet(f"color: {p.text_secondary}; font-family: Consolas; font-size: 11px; background: transparent;")
-        prog_layout.addWidget(self.time_total)
+        time_layout.addWidget(self.time_total)
 
-        right.addWidget(prog_container)
+        right.addLayout(time_layout)
 
         # 控制按钮
         controls = QHBoxLayout()
@@ -203,8 +221,7 @@ class PlayerPanel(QWidget):
         self.prev_btn.clicked.connect(self._prev_track)
         controls.addWidget(self.prev_btn)
 
-        self.play_btn = ControlButton("▶", 70)
-        self.play_btn._update_style(True)
+        self.play_btn = QingButton()
         self.play_btn.clicked.connect(self._toggle_play)
         controls.addWidget(self.play_btn)
 
@@ -214,21 +231,17 @@ class PlayerPanel(QWidget):
 
         right.addLayout(controls)
 
-        # 音量
-        from PyQt6.QtWidgets import QSlider
+        # 拨弦音量滑块
         vol_layout = QHBoxLayout()
         vol_layout.setSpacing(10)
         vol_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        vol_icon = QLabel("🔊")
-        vol_icon.setStyleSheet("background: transparent;")
+        vol_icon = QLabel("音量")
+        vol_icon.setStyleSheet(f"color: {p.text_secondary}; background: transparent;")
         vol_layout.addWidget(vol_icon)
 
-        self.volume_slider = QSlider(Qt.Orientation.Horizontal)
-        self.volume_slider.setRange(0, 100)
-        self.volume_slider.setValue(80)
-        self.volume_slider.setFixedWidth(150)
-        self.volume_slider.valueChanged.connect(self._on_volume)
+        self.volume_slider = PluckVolumeSlider()
+        self.volume_slider.value_changed.connect(self._on_volume)
         vol_layout.addWidget(self.volume_slider)
 
         right.addLayout(vol_layout)
@@ -267,6 +280,13 @@ class PlayerPanel(QWidget):
                     color: {p.primary};
                 }}
             """)
+
+    def _update_device_display(self):
+        """更新音频设备显示"""
+        icon = audio_device_detector.get_device_icon()
+        type_name = audio_device_detector.get_device_type_name()
+        device_name = audio_device_detector.current_device.name if audio_device_detector.current_device else ""
+        self.device_label.setText(f"{icon} {type_name}: {device_name}")
 
     def _toggle_learning(self):
         self._learning_enabled = self.learning_btn.isChecked()
@@ -313,13 +333,17 @@ class PlayerPanel(QWidget):
 
     def _toggle_play(self):
         if self._is_playing:
+            # 暂停
             self.audio_player.pause()
             self.play_btn.setText("▶")
             self.vinyl.set_playing(False)
             self.spectrum.set_playing(False)
             self._is_playing = False
         else:
+            # 播放
             self.audio_player.play()
+            # 设置初始音量
+            self.audio_player.set_volume(self.volume_slider._value / 100.0)
             self.play_btn.setText("⏸")
             self.vinyl.set_playing(True)
             self.spectrum.set_playing(True)

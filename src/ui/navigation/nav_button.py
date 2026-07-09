@@ -1,7 +1,7 @@
 """导航按钮"""
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QColor
 
 from ..theme import theme_manager
 
@@ -17,7 +17,7 @@ class NavButton(QPushButton):
         self._is_active = False
 
         self.setText(f"{icon}\n{text}")
-        self.setFixedSize(60, 60)
+        self.setFixedSize(65, 65)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         font = QFont("Microsoft YaHei", 9)
@@ -38,7 +38,7 @@ class NavButton(QPushButton):
                     background-color: {p.primary};
                     color: {p.paper};
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     padding: 8px;
                     font-weight: bold;
                 }}
@@ -47,13 +47,13 @@ class NavButton(QPushButton):
             self.setStyleSheet(f"""
                 QPushButton {{
                     background-color: transparent;
-                    color: {p.text};
+                    color: {p.text_secondary};
                     border: none;
-                    border-radius: 10px;
+                    border-radius: 8px;
                     padding: 8px;
                 }}
                 QPushButton:hover {{
-                    background-color: {p.primary}30;
+                    background-color: {p.primary}20;
                     color: {p.primary};
                 }}
             """)

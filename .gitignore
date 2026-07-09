@@ -26,4 +26,4 @@ Thumbs.db
 # 测试
 .coverage
 htmlcov/
-.pytest_cache/
+.pytest_cache/web/static/audio/*.mp3

@@ -5,39 +5,86 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">音频工具</h1>
-    <p class="page-subtitle">上传音频，可视化作曲或分析</p>
+    <p class="page-subtitle">上传音频，波形预览，分析处理</p>
 </div>
 
 <div class="tools-layout">
-    <div class="card">
+    <!-- 上传区 -->
+    <div class="card" id="upload-card">
         <div class="card-header"><h2 class="card-title">上传音频</h2></div>
-        <div class="tools-upload">
-            <input type="file" id="file-input" accept="audio/*" style="display:none;">
-            <div class="bg-upload-area" id="upload-area">点击选择音频文件<br><small>支持 WAV, MP3, FLAC</small></div>
-            <p id="file-name" class="file-name"></p>
+        <input type="file" id="file-input" accept="audio/*" style="display:none;">
+        <div class="bg-upload-area" id="upload-area">点击或拖拽音频文件到此处<br><small>WAV, MP3, FLAC</small></div>
+        <div id="audio-info" class="audio-info"></div>
+    </div>
+
+    <!-- 播放控制 + 波形 -->
+    <div class="card" id="wave-card" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title">波形图</h2>
+            <div class="wave-tools">
+                <button id="btn-audio-play" class="btn btn-sm" disabled>▶</button>
+                <span id="play-time" class="play-time">0:00</span>
+                <span class="text-secondary">/</span>
+                <span id="play-duration" class="play-time">0:00</span>
+                <input type="range" id="vol-local" class="vol-local" min="0" max="100" value="80">
+                <span id="zoom-label">100%</span>
+            </div>
         </div>
+        <canvas id="waveform-canvas" width="900" height="200" class="waveform"></canvas>
+        <div class="wave-markers" id="wave-markers"></div>
     </div>
 
-    <div class="card" id="waveform-card" style="display: none;">
-        <div class="card-header"><h2 class="card-title">波形图</h2></div>
-        <canvas id="waveform-canvas" width="800" height="150" class="waveform"></canvas>
+    <!-- 频谱图 -->
+    <div class="card" id="spectrum-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">频谱分析</h2></div>
+        <canvas id="spectrum-canvas" width="900" height="120" class="waveform"></canvas>
     </div>
 
+    <!-- 音频处理 -->
     <div class="card" id="tools-card" style="display: none;">
         <div class="card-header"><h2 class="card-title">音频处理</h2></div>
-        <div class="tools-buttons">
-            <button class="btn btn-secondary" onclick="trimAudio()">裁剪（首尾10%）</button>
-            <button class="btn btn-secondary" onclick="normalizeAudio()">归一化音量</button>
-            <button class="btn btn-primary" onclick="analyzeAudio()">生成简谱</button>
+        <div class="tools-grid">
+            <div class="tool-block">
+                <span class="tool-label">裁剪</span>
+                <div class="tool-row">
+                    <input type="number" id="trim-start" class="input" value="0" step="0.1" min="0" style="width:70px;">
+                    <span>~</span>
+                    <input type="number" id="trim-end" class="input" value="30" step="0.1" min="0" style="width:70px;">
+                    <span>秒</span>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="doTrim()">裁剪</button>
+            </div>
+            <div class="tool-block">
+                <span class="tool-label">变调</span>
+                <div class="tool-row">
+                    <button class="btn btn-sm" onclick="adjPitch(-1)">-1</button>
+                    <span id="pitch-value">0</span>
+                    <span>半音</span>
+                    <button class="btn btn-sm" onclick="adjPitch(1)">+1</button>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="doPitchShift()">变调</button>
+            </div>
+            <div class="tool-block">
+                <span class="tool-label">归一化</span>
+                <span class="text-secondary" style="font-size:12px;">统一音量峰值</span>
+                <button class="btn btn-sm btn-secondary" onclick="doNormalize()">归一化</button>
+            </div>
+            <div class="tool-block">
+                <span class="tool-label">生成简谱</span>
+                <span class="text-secondary" style="font-size:12px;">AI识别音符</span>
+                <button class="btn btn-sm btn-primary" onclick="doAnalyze()">生成简谱</button>
+            </div>
         </div>
         <div id="tools-result" class="tools-result"></div>
     </div>
 
+    <!-- 简谱结果 -->
     <div class="card" id="score-result-card" style="display: none;">
         <div class="card-header"><h2 class="card-title">识别结果</h2></div>
+        <div class="score-notes-list" id="score-notes-list"></div>
         <div class="score-text-result" id="score-text"></div>
-        <div class="tools-buttons" style="margin-top: 12px;">
-            <button class="btn btn-primary" onclick="saveToEditor()">保存到简谱编辑器</button>
+        <div style="margin-top: 12px;">
+            <button class="btn btn-primary" onclick="saveToEditor()">保存到编辑器</button>
         </div>
     </div>
 </div>
@@ -45,93 +92,198 @@
 
 {% block scripts %}
 <script>
-let currentFile = null, scoreText = '';
+let currentFile = null, audioBuffer = null, audioCtx = null, audioSource = null;
+let isPlaying = false, playStartTime = 0, playOffset = 0;
+let scoreText = '', scoreNotes = [], pitchShift = 0;
 
-document.getElementById('upload-area').addEventListener('click', () => document.getElementById('file-input').click());
-document.getElementById('file-input').addEventListener('change', e => {
-    if (e.target.files.length > 0) {
-        currentFile = e.target.files[0];
-        document.getElementById('file-name').textContent = currentFile.name;
-        drawWaveform();
-        document.getElementById('waveform-card').style.display = 'block';
-        document.getElementById('tools-card').style.display = 'block';
+// ============ 上传 ============
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('file-input');
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('dragover'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+
+async function loadFile(file) {
+    currentFile = file;
+    const info = document.getElementById('audio-info');
+    info.innerHTML = `<div class="info-row"><span>文件：</span><strong>${file.name}</strong></div>
+        <div class="info-row"><span>大小：</span>${(file.size/1024/1024).toFixed(1)} MB</div>`;
+
+    const ab = await file.arrayBuffer();
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioBuffer = await audioCtx.decodeAudioData(ab);
+
+    info.innerHTML += `<div class="info-row"><span>时长：</span>${fmt(audioBuffer.duration)}</div>
+        <div class="info-row"><span>采样率：</span>${audioBuffer.sampleRate} Hz</div>
+        <div class="info-row"><span>声道：</span>${audioBuffer.numberOfChannels}</div>`;
+
+    document.getElementById('play-duration').textContent = fmt(audioBuffer.duration);
+    document.getElementById('trim-end').value = Math.round(audioBuffer.duration);
+    document.getElementById('btn-audio-play').disabled = false;
+    document.getElementById('wave-card').style.display = 'block';
+    document.getElementById('spectrum-card').style.display = 'block';
+    document.getElementById('tools-card').style.display = 'block';
+    drawWaveform();
+    drawSpectrum();
+}
+
+// ============ 播放控制 ============
+const playBtn = document.getElementById('btn-audio-play');
+const playTime = document.getElementById('play-time');
+let raf;
+playBtn.addEventListener('click', () => {
+    if (!audioBuffer) return;
+    if (isPlaying) {
+        isPlaying = false; playOffset = 0;
+        if (audioSource) audioSource.stop();
+        playBtn.textContent = '▶';
+        cancelAnimationFrame(raf);
+        return;
     }
+    isPlaying = true; playStartTime = audioCtx.currentTime;
+    audioSource = audioCtx.createBufferSource();
+    audioSource.buffer = audioBuffer;
+    audioSource.connect(audioCtx.destination);
+    audioSource.start();
+    playBtn.textContent = '■';
+    function tick() {
+        if (!isPlaying) return;
+        const elapsed = audioCtx.currentTime - playStartTime + playOffset;
+        playTime.textContent = fmt(elapsed);
+        // 移动波形指示线
+        const canvas = document.getElementById('waveform-canvas');
+        const pct = Math.min(1, elapsed / audioBuffer.duration);
+        drawCursor(pct * canvas.width);
+        if (elapsed >= audioBuffer.duration) { isPlaying = false; playBtn.textContent = '▶'; playTime.textContent = fmt(audioBuffer.duration); }
+        else raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
 });
 
-async function drawWaveform() {
+// ============ 波形图 ============
+function drawWaveform() {
     const canvas = document.getElementById('waveform-canvas');
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
 
-    const arrayBuffer = await currentFile.arrayBuffer();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     const data = audioBuffer.getChannelData(0);
-    const step = Math.ceil(data.length / canvas.width);
+    const step = Math.ceil(data.length / w);
 
+    // 背景网格
+    ctx.strokeStyle = '#E0D8CC';
+    ctx.lineWidth = 0.5;
+    for (let y = 0; y < h; y += h/4) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+    // 波形
     ctx.fillStyle = '#8B2500';
-    for (let i = 0; i < canvas.width; i++) {
+    for (let i = 0; i < w; i++) {
         let max = 0;
-        for (let j = 0; j < step; j++) {
-            const idx = i * step + j;
-            if (idx < data.length) max = Math.max(max, Math.abs(data[idx]));
-        }
-        const h = max * (canvas.height / 2);
-        ctx.fillRect(i, canvas.height / 2 - h, 1, Math.max(1, h * 2));
+        for (let j = 0; j < step; j++) { const idx = i*step+j; if(idx<data.length) max = Math.max(max, Math.abs(data[idx])); }
+        const barH = max * (h/2);
+        ctx.fillRect(i, h/2 - barH, 1.5, Math.max(1, barH * 2));
+    }
+
+    // 时间刻度
+    ctx.fillStyle = '#9B9B9B'; ctx.font = '10px sans-serif';
+    const duration = audioBuffer.duration;
+    for (let i = 0; i <= duration; i += Math.max(1, Math.floor(duration/8))) {
+        const x = (i / duration) * w;
+        ctx.fillText(fmt(i), x - 10, h - 3);
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
     }
 }
 
-async function trimAudio() {
-    if (!currentFile) return;
-    const formData = new FormData();
-    formData.append('file', currentFile);
-    formData.append('start', '0');
-    formData.append('end', '60');
-    const r = await fetch('/api/audio/trim', { method: 'POST', body: formData });
-    const d = await r.json();
-    document.getElementById('tools-result').innerHTML = d.success
-        ? `<a href="${d.url}" download>下载裁剪后的音频</a>`
-        : `失败: ${d.error}`;
+function drawCursor(x) {
+    const canvas = document.getElementById('waveform-canvas');
+    const ctx = canvas.getContext('2d');
+    drawWaveform();
+    ctx.strokeStyle = '#e07a5f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
 }
 
-async function normalizeAudio() {
-    if (!currentFile) return;
-    const formData = new FormData();
-    formData.append('file', currentFile);
-    const r = await fetch('/api/audio/normalize', { method: 'POST', body: formData });
-    const d = await r.json();
-    document.getElementById('tools-result').innerHTML = d.success
-        ? `<a href="${d.url}" download>下载归一化后的音频</a>`
-        : `失败: ${d.error}`;
+// ============ 频谱图 ============
+function drawSpectrum() {
+    const canvas = document.getElementById('spectrum-canvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // 用一小段音频做频谱
+    const data = audioBuffer.getChannelData(0).slice(0, Math.min(audioBuffer.length, audioBuffer.sampleRate * 2));
+    const fft = new Float32Array(data);
+    ctx.fillStyle = '#8B2500';
+    const bars = 120;
+    const barW = w / bars;
+    for (let i = 0; i < bars; i++) {
+        const freqIndex = Math.floor((i / bars) * fft.length);
+        const val = Math.abs(fft[freqIndex] || 0);
+        const barH = Math.min(h, val * h * 10);
+        ctx.fillRect(i * barW, h - barH, barW - 1, barH);
+    }
+    // 频率标签
+    ctx.fillStyle = '#9B9B9B'; ctx.font = '10px sans-serif';
+    for (let i = 0; i <= 4; i++) { ctx.fillText((i*5)+'kHz', (i/4)*(w-30), 12); }
 }
 
-async function analyzeAudio() {
-    if (!currentFile) return;
-    const formData = new FormData();
-    formData.append('file', currentFile);
-    const r = await fetch('/api/audio/analyze', { method: 'POST', body: formData });
+// ============ 处理操作 ============
+const resultDiv = document.getElementById('tools-result');
+function showResult(msg, url) { resultDiv.innerHTML = url ? `<p>${msg} <a href="${url}" download>下载</a></p>` : `<p>${msg}</p>`; }
+
+async function doTrim() {
+    const start = parseFloat(document.getElementById('trim-start').value);
+    const end = parseFloat(document.getElementById('trim-end').value);
+    const fd = new FormData(); fd.append('file', currentFile);
+    const r = await fetch(`/api/audio/trim?start=${start}&end=${end}`, { method: 'POST', body: fd });
+    const d = await r.json();
+    showResult(d.success ? `裁剪完成(${start}s-${end}s)` : '裁剪失败', d.url);
+}
+
+async function doPitchShift() {
+    const fd = new FormData(); fd.append('file', currentFile);
+    const r = await fetch(`/api/audio/pitch?shift=${pitchShift}`, { method: 'POST', body: fd });
+    const d = await r.json();
+    showResult(d.success ? `变调完成(shift:${pitchShift})` : '变调失败', d.url);
+}
+
+function adjPitch(d) { pitchShift += d; document.getElementById('pitch-value').textContent = pitchShift; }
+
+async function doNormalize() {
+    const fd = new FormData(); fd.append('file', currentFile);
+    const r = await fetch('/api/audio/normalize', { method: 'POST', body: fd });
+    const d = await r.json();
+    showResult(d.success ? '归一化完成' : '归一化失败', d.url);
+}
+
+async function doAnalyze() {
+    const fd = new FormData(); fd.append('file', currentFile);
+    const r = await fetch('/api/audio/analyze', { method: 'POST', body: fd });
     const d = await r.json();
     if (d.success) {
-        scoreText = d.score_text;
+        scoreText = d.score_text; scoreNotes = d.notes || [];
         document.getElementById('score-result-card').style.display = 'block';
         document.getElementById('score-text').textContent = scoreText;
-    } else {
-        alert('分析失败: ' + d.error);
-    }
+        if (scoreNotes.length) {
+            document.getElementById('score-notes-list').innerHTML = '<div class="score-notes-grid">' +
+                scoreNotes.map(n => `<span class="score-note-badge">${n.note}</span>`).join('') +
+                `<span class="text-secondary" style="font-size:12px;">共 ${scoreNotes.length} 个音符</span></div>`;
+        }
+    } else { alert('分析失败: ' + d.error); }
 }
 
 async function saveToEditor() {
     if (!scoreText) return;
-    try {
-        const r = await fetch('/api/score', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ title: currentFile.name.replace(/\.[^.]+$/, ''), notes_data: scoreText })
-        });
-        const d = await r.json();
-        if (d.success) window.location.href = '/editor';
-        else alert('保存失败');
-    } catch (e) { alert('保存出错: ' + e.message); }
+    const r = await fetch('/api/score', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ title: currentFile.name.replace(/\.[^.]+$/,''), notes_data: scoreText })
+    });
+    const d = await r.json();
+    if (d.success) window.location.href = '/editor';
+    else alert('保存失败');
 }
+
+function fmt(sec) { const m = Math.floor(sec/60), s = Math.floor(sec%60); return `${m}:${s.toString().padStart(2,'0')}`; }
 </script>
 {% endblock %}

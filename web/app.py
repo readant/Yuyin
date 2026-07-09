@@ -661,3 +661,25 @@ async def normalize_audio(file: UploadFile = File(...)):
         return {"success": True, "url": f"/static/audio/{out_name}"}
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+@app.post("/api/audio/pitch")
+async def pitch_shift_audio(file: UploadFile = File(...), shift: int = 0):
+    """变调音频"""
+    import librosa
+    import soundfile as sf
+
+    filepath = os.path.join(AUDIO_TOOLS_DIR, file.filename)
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        y, sr = librosa.load(filepath, sr=None)
+        y_shifted = librosa.effects.pitch_shift(y=y, sr=sr, n_steps=shift)
+
+        out_name = f"pitched_{file.filename}"
+        out_path = os.path.join(AUDIO_TOOLS_DIR, out_name)
+        sf.write(out_path, y_shifted, sr)
+        return {"success": True, "url": f"/static/audio/{out_name}"}
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)

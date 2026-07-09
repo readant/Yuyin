@@ -1659,7 +1659,45 @@ body {
     font-size: 20px;
     letter-spacing: 2px;
     word-break: break-all;
+    line-height: 1.8;
 }
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+}
+
+.tool-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+}
+
+.tool-label { font-weight: 600; font-size: 14px; }
+.tool-row { display: flex; align-items: center; gap: var(--space-xs); }
+
+.audio-info { margin-top: var(--space-md); }
+.info-row { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+.info-row strong { color: var(--text-primary); }
+
+.wave-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.play-time { font-family: monospace; font-size: 13px; color: var(--text-primary); min-width: 40px; }
+.vol-local { width: 80px; height: 4px; -webkit-appearance: none; background: var(--border-color); border-radius: 2px; outline: none; }
+.vol-local::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--color-primary); cursor: pointer; }
+
+.wave-markers { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-tertiary); padding: 0 4px; }
+
+.score-notes-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.score-note-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; font-weight: 500; }
 
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }

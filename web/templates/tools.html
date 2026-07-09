@@ -11,9 +11,29 @@
 <div class="tools-layout">
     <!-- 上传区 -->
     <div class="card" id="upload-card">
-        <div class="card-header"><h2 class="card-title">上传音频</h2></div>
+        <div class="card-header">
+            <h2 class="card-title">上传音频</h2>
+            <div class="tools-buttons" style="margin-left: auto;">
+                <button id="btn-record" class="btn btn-sm" onclick="toggleRecord()">⏺ 录音</button>
+            </div>
+        </div>
         <input type="file" id="file-input" accept="audio/*" style="display:none;">
         <div class="bg-upload-area" id="upload-area">点击或拖拽音频文件到此处<br><small>WAV, MP3, FLAC</small></div>
+
+        <!-- 录音区 -->
+        <div id="record-area" style="display: none; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="record-time" class="record-time">00:00</span>
+                <div class="record-dot" id="record-dot"></div>
+                <span class="text-secondary">录音中...</span>
+            </div>
+            <canvas id="record-canvas" width="800" height="80" class="waveform" style="margin-top: 8px;"></canvas>
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button id="btn-stop-record" class="btn btn-sm btn-primary">停止录音</button>
+                <span id="record-status" class="text-secondary"></span>
+            </div>
+        </div>
+
         <div id="audio-info" class="audio-info"></div>
     </div>
 
@@ -285,5 +305,119 @@ async function saveToEditor() {
 }
 
 function fmt(sec) { const m = Math.floor(sec/60), s = Math.floor(sec%60); return `${m}:${s.toString().padStart(2,'0')}`; }
+
+// ============ 录音功能 ============
+let mediaRecorder, recordChunks = [], isRecording = false;
+let recordStream, recordCtx, recordAnalyser, recordTimer, recordRaf;
+
+async function toggleRecord() {
+    const area = document.getElementById('record-area');
+    const btn = document.getElementById('btn-record');
+
+    if (isRecording) {
+        stopRecord();
+        return;
+    }
+
+    try {
+        recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = recordCtx.createMediaStreamSource(recordStream);
+        recordAnalyser = recordCtx.createAnalyser();
+        recordAnalyser.fftSize = 256;
+        source.connect(recordAnalyser);
+
+        mediaRecorder = new MediaRecorder(recordStream);
+        recordChunks = [];
+        mediaRecorder.ondataavailable = e => recordChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordChunks, { type: 'audio/wav' });
+            currentFile = new File([blob], `录音_${new Date().toLocaleString().replace(/[/: ]/g, '-')}.wav`, { type: 'audio/wav' });
+            const reader = new FileReader();
+            reader.onload = async () => {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioBuffer = await audioCtx.decodeAudioData(reader.result);
+                showAudioInfo();
+            };
+            reader.readAsArrayBuffer(blob);
+            document.getElementById('record-status').textContent = '录音完成，已加载';
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        area.style.display = 'block';
+        btn.textContent = '⏹ 停止';
+        btn.classList.add('active');
+        document.getElementById('record-dot').classList.add('blink');
+        document.getElementById('upload-area').style.display = 'none';
+
+        let startTime = Date.now();
+        recordTimer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            document.getElementById('record-time').textContent = fmt(elapsed / 1000);
+        }, 100);
+
+        drawRecordWave();
+    } catch (e) {
+        alert('无法访问麦克风: ' + e.message);
+    }
+}
+
+function stopRecord() {
+    if (!isRecording) return;
+    mediaRecorder.stop();
+    recordStream.getTracks().forEach(t => t.stop());
+    isRecording = false;
+    clearInterval(recordTimer);
+    cancelAnimationFrame(recordRaf);
+
+    const btn = document.getElementById('btn-record');
+    btn.textContent = '⏺ 录音';
+    btn.classList.remove('active');
+    document.getElementById('record-dot').classList.remove('blink');
+    document.getElementById('upload-area').style.display = 'block';
+    document.getElementById('btn-stop-record').style.display = 'none';
+}
+
+document.getElementById('btn-stop-record').addEventListener('click', stopRecord);
+
+function drawRecordWave() {
+    if (!isRecording) return;
+    const canvas = document.getElementById('record-canvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const buf = new Uint8Array(recordAnalyser.frequencyBinCount);
+    recordAnalyser.getByteFrequencyData(buf);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#8B2500';
+
+    const barW = w / buf.length;
+    for (let i = 0; i < buf.length; i++) {
+        const barH = (buf[i] / 255) * h;
+        ctx.fillRect(i * barW, h - barH, barW - 1, barH);
+    }
+
+    recordRaf = requestAnimationFrame(drawRecordWave);
+}
+
+function showAudioInfo() {
+    const info = document.getElementById('audio-info');
+    info.innerHTML = `
+        <div class="info-row"><span>文件：</span><strong>${currentFile.name}</strong></div>
+        <div class="info-row"><span>大小：</span>${(currentFile.size/1024/1024).toFixed(1)} MB</div>
+        <div class="info-row"><span>时长：</span>${fmt(audioBuffer.duration)}</div>
+        <div class="info-row"><span>采样率：</span>${audioBuffer.sampleRate} Hz</div>
+        <div class="info-row"><span>声道：</span>${audioBuffer.numberOfChannels}</div>`;
+    document.getElementById('play-duration').textContent = fmt(audioBuffer.duration);
+    document.getElementById('trim-end').value = Math.round(audioBuffer.duration);
+    document.getElementById('btn-audio-play').disabled = false;
+    document.getElementById('wave-card').style.display = 'block';
+    document.getElementById('spectrum-card').style.display = 'block';
+    document.getElementById('tools-card').style.display = 'block';
+    drawWaveform();
+    drawSpectrum();
+}
 </script>
 {% endblock %}

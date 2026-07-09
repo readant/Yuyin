@@ -1699,6 +1699,12 @@ body {
 .score-notes-grid { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
 .score-note-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 6px; font-size: 16px; font-weight: 500; }
 
+/* 录音元素 */
+.record-time { font-size: 24px; font-weight: 700; color: var(--color-primary); font-family: monospace; }
+.record-dot { width: 12px; height: 12px; border-radius: 50%; background: #e63946; }
+.record-dot.blink { animation: blink 1s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
 .bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }

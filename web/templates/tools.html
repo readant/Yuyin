@@ -1,531 +1,238 @@
 {% extends "base.html" %}
-
 {% block title %}余音 - 音频工具{% endblock %}
-
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">音频工具</h1>
-    <p class="page-subtitle">上传音频，波形预览，分析处理</p>
+    <h1 class="page-title">音频仪表盘</h1>
+    <p class="page-subtitle">专业级音频可视化与分析工具</p>
 </div>
 
-<div class="tools-layout">
-    <!-- 上传区 -->
-    <div class="card" id="upload-card">
-        <div class="card-header">
-            <h2 class="card-title">上传音频</h2>
-            <div class="tools-buttons" style="margin-left: auto;">
-                <button id="btn-record" class="btn btn-sm" onclick="toggleRecord()">⏺ 录音</button>
+<div class="dashboard-layout">
+    <!-- 上传与录音 -->
+    <div class="dash-row">
+        <div class="dash-col col-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">音频源</h2>
+                    <div class="dash-actions">
+                        <input type="file" id="file-input" accept="audio/*" style="display:none;">
+                        <button class="btn btn-sm" onclick="document.getElementById('file-input').click()">选择文件</button>
+                        <button id="btn-record-dash" class="btn btn-sm" onclick="toggleRecord()">⏺ 录音</button>
+                    </div>
+                </div>
+                <div class="bg-upload-area" id="upload-area">拖拽音频文件到此处<br><small>WAV, MP3, FLAC</small></div>
+                <div id="record-panel" class="record-panel" style="display: none;">
+                    <div class="record-header">
+                        <span id="record-time" class="record-time">00:00</span>
+                        <div class="record-dot" id="record-dot"></div>
+                        <button class="btn btn-sm btn-primary" onclick="stopRecord()">停止</button>
+                    </div>
+                    <canvas id="record-canvas" width="800" height="60" class="waveform"></canvas>
+                </div>
             </div>
         </div>
-        <input type="file" id="file-input" accept="audio/*" style="display:none;">
-        <div class="bg-upload-area" id="upload-area">点击或拖拽音频文件到此处<br><small>WAV, MP3, FLAC</small></div>
-
-        <!-- 录音区 -->
-        <div id="record-area" style="display: none; margin-top: 12px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="record-time" class="record-time">00:00</span>
-                <div class="record-dot" id="record-dot"></div>
-                <span class="text-secondary">录音中...</span>
-            </div>
-            <canvas id="record-canvas" width="800" height="80" class="waveform" style="margin-top: 8px;"></canvas>
-            <div style="margin-top: 8px; display: flex; gap: 8px;">
-                <button id="btn-stop-record" class="btn btn-sm btn-primary">停止录音</button>
-                <span id="record-status" class="text-secondary"></span>
+        <div class="dash-col col-4" id="info-panel" style="display: none;">
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">文件信息</h2></div>
+                <div id="audio-info" class="dash-info"></div>
             </div>
         </div>
-
-        <div id="audio-info" class="audio-info"></div>
     </div>
 
-    <!-- 播放控制 + 波形 -->
+    <!-- 波形图 -->
     <div class="card" id="wave-card" style="display: none;">
         <div class="card-header">
-            <h2 class="card-title">波形图</h2>
-            <div class="wave-tools">
-                <button id="btn-audio-play" class="btn btn-sm" disabled>▶</button>
-                <span id="play-time" class="play-time">0:00</span>
-                <span class="text-secondary">/</span>
-                <span id="play-duration" class="play-time">0:00</span>
+            <h2 class="card-title">波形</h2>
+            <div class="wave-controls">
+                <button id="btn-play" class="btn btn-sm" disabled>▶</button>
+                <span id="play-time">0:00</span> / <span id="play-end">0:00</span>
                 <input type="range" id="vol-local" class="vol-local" min="0" max="100" value="80">
-                <span id="zoom-label">100%</span>
             </div>
         </div>
-        <canvas id="waveform-canvas" width="900" height="200" class="waveform"></canvas>
-        <div class="wave-markers" id="wave-markers"></div>
+        <canvas id="waveform-canvas" width="1000" height="180" class="waveform-dash"></canvas>
     </div>
 
-    <!-- 频谱图 -->
-    <div class="card" id="spectrum-card" style="display: none;">
-        <div class="card-header"><h2 class="card-title">频谱分析</h2></div>
-        <canvas id="spectrum-canvas" width="900" height="120" class="waveform"></canvas>
-    </div>
-
-    <!-- 音频处理 -->
-    <div class="card" id="tools-card" style="display: none;">
-        <div class="card-header"><h2 class="card-title">音频处理</h2></div>
-        <div class="tools-grid">
-            <div class="tool-block">
-                <span class="tool-label">裁剪</span>
-                <div class="tool-row">
-                    <input type="number" id="trim-start" class="input" value="0" step="0.1" min="0" style="width:70px;">
-                    <span>~</span>
-                    <input type="number" id="trim-end" class="input" value="30" step="0.1" min="0" style="width:70px;">
-                    <span>秒</span>
+    <!-- 处理工具 + 频谱 -->
+    <div class="dash-row" id="tools-row" style="display: none;">
+        <div class="dash-col col-6">
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">处理工具</h2></div>
+                <div class="process-grid">
+                    <div class="process-item">
+                        <span>裁剪 (秒)</span>
+                        <div class="input-row">
+                            <input type="number" id="trim-start" class="input" value="0" step="0.1" style="width:70px;">
+                            <span>~</span>
+                            <input type="number" id="trim-end" class="input" value="30" step="0.1" style="width:70px;">
+                            <button class="btn btn-sm btn-secondary" onclick="doTrim()">裁剪</button>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <span>变调 (半音)</span>
+                        <div class="input-row">
+                            <button class="btn btn-sm" onclick="adjPitch(-1)">-1</button>
+                            <span id="pitch-value">0</span>
+                            <button class="btn btn-sm" onclick="adjPitch(1)">+1</button>
+                            <button class="btn btn-sm btn-secondary" onclick="doPitchShift()">变调</button>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <span>归一化 / 分析</span>
+                        <div class="input-row">
+                            <button class="btn btn-sm btn-secondary" onclick="doNormalize()">归一化</button>
+                            <button class="btn btn-sm btn-primary" onclick="doAnalyze()">生成简谱</button>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-sm btn-secondary" onclick="doTrim()">裁剪</button>
-            </div>
-            <div class="tool-block">
-                <span class="tool-label">变调</span>
-                <div class="tool-row">
-                    <button class="btn btn-sm" onclick="adjPitch(-1)">-1</button>
-                    <span id="pitch-value">0</span>
-                    <span>半音</span>
-                    <button class="btn btn-sm" onclick="adjPitch(1)">+1</button>
-                </div>
-                <button class="btn btn-sm btn-secondary" onclick="doPitchShift()">变调</button>
-            </div>
-            <div class="tool-block">
-                <span class="tool-label">归一化</span>
-                <span class="text-secondary" style="font-size:12px;">统一音量峰值</span>
-                <button class="btn btn-sm btn-secondary" onclick="doNormalize()">归一化</button>
-            </div>
-            <div class="tool-block">
-                <span class="tool-label">生成简谱</span>
-                <span class="text-secondary" style="font-size:12px;">AI识别音符</span>
-                <button class="btn btn-sm btn-primary" onclick="doAnalyze()">生成简谱</button>
+                <div id="tools-result" class="tools-result"></div>
             </div>
         </div>
-        <div id="tools-result" class="tools-result"></div>
+        <div class="dash-col col-6">
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">频谱分析</h2></div>
+                <canvas id="spectrum-canvas" width="500" height="160" class="waveform"></canvas>
+            </div>
+        </div>
     </div>
 
     <!-- 简谱结果 -->
-    <div class="card" id="compare-card" style="display: none;">
-        <div class="card-header"><h2 class="card-title">对比练习</h2></div>
-        <div class="compare-area">
-            <div class="compare-step">
-                <span class="step-num">1</span>
-                <span>当前文件已作为参考音频</span>
-                <span id="ref-name" class="text-secondary"></span>
-            </div>
-            <div class="compare-step">
-                <span class="step-num">2</span>
-                <button id="btn-self-record" class="btn btn-secondary">录制我的演奏</button>
-                <div id="self-record-area" style="display: none; margin-top: 8px;">
-                    <span id="self-time" class="record-time">00:00</span>
-                    <div class="record-dot" id="self-dot"></div>
-                    <button id="btn-self-stop" class="btn btn-sm btn-primary">停止录制</button>
-                </div>
-            </div>
-            <div class="compare-step">
-                <span class="step-num">3</span>
-                <button id="btn-compare" class="btn btn-primary" disabled>开始对比</button>
-            </div>
-            <div id="compare-result" class="compare-result" style="display: none;">
-                <div class="stats-grid">
-                    <div class="stat-item"><div class="stat-value" id="match-rate">0%</div><div class="stat-label">音高匹配</div></div>
-                    <div class="stat-item"><div class="stat-value" id="matched-count">0</div><div class="stat-label">匹配音符</div></div>
-                    <div class="stat-item"><div class="stat-value" id="missed-count">0</div><div class="stat-label">遗漏</div></div>
-                </div>
-                <div id="diff-notes" class="diff-notes"></div>
-            </div>
-        </div>
-    </div>
-        <div class="card-header"><h2 class="card-title">识别结果</h2></div>
-        <div class="score-notes-list" id="score-notes-list"></div>
-        <div class="score-text-result" id="score-text"></div>
-        <div style="margin-top: 12px;">
-            <button class="btn btn-primary" onclick="saveToEditor()">保存到编辑器</button>
-        </div>
+    <div class="card" id="score-result-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">识别简谱</h2></div>
+        <div id="score-notes-list" class="score-notes-grid"></div>
+        <div id="score-text" class="score-text"></div>
+        <button class="btn btn-primary" onclick="saveToEditor()">保存到编辑器</button>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-let currentFile = null, audioBuffer = null, audioCtx = null, audioSource = null;
-let isPlaying = false, playStartTime = 0, playOffset = 0;
-let scoreText = '', scoreNotes = [], pitchShift = 0;
+let currentFile, audioBuffer, audioCtx, audioSource, isPlaying, playStart, playOffset, raf;
+let pitchShift = 0, scoreText = '', scoreNotes = [];
 
-// ============ 上传 ============
-const uploadArea = document.getElementById('upload-area');
-const fileInput = document.getElementById('file-input');
-uploadArea.addEventListener('click', () => fileInput.click());
-uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('dragover'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+// 上传
+const ua = document.getElementById('upload-area'), fi = document.getElementById('file-input');
+ua.addEventListener('click', () => fi.click());
+ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('dragover'); });
+ua.addEventListener('dragleave', () => ua.classList.remove('dragover'));
+ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('dragover'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
 
 async function loadFile(file) {
     currentFile = file;
-    const info = document.getElementById('audio-info');
-    info.innerHTML = `<div class="info-row"><span>文件：</span><strong>${file.name}</strong></div>
-        <div class="info-row"><span>大小：</span>${(file.size/1024/1024).toFixed(1)} MB</div>`;
-
     const ab = await file.arrayBuffer();
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     audioBuffer = await audioCtx.decodeAudioData(ab);
+    showInfo();
+}
 
-    info.innerHTML += `<div class="info-row"><span>时长：</span>${fmt(audioBuffer.duration)}</div>
-        <div class="info-row"><span>采样率：</span>${audioBuffer.sampleRate} Hz</div>
-        <div class="info-row"><span>声道：</span>${audioBuffer.numberOfChannels}</div>`;
-
-    document.getElementById('play-duration').textContent = fmt(audioBuffer.duration);
+function showInfo() {
+    document.getElementById('audio-info').innerHTML = `<div class="info-row"><span>文件：</span><strong>${currentFile.name}</strong></div>
+        <div class="info-row"><span>大小：</span>${(currentFile.size/1024/1024).toFixed(1)} MB</div>
+        <div class="info-row"><span>时长：</span>${fmt(audioBuffer.duration)}</div>
+        <div class="info-row"><span>采样率：</span>${audioBuffer.sampleRate} Hz</div>`;
+    document.getElementById('play-end').textContent = fmt(audioBuffer.duration);
     document.getElementById('trim-end').value = Math.round(audioBuffer.duration);
-    document.getElementById('btn-audio-play').disabled = false;
+    document.getElementById('btn-play').disabled = false;
+    document.getElementById('info-panel').style.display = 'block';
     document.getElementById('wave-card').style.display = 'block';
-    document.getElementById('spectrum-card').style.display = 'block';
-    document.getElementById('tools-card').style.display = 'block';
+    document.getElementById('tools-row').style.display = 'flex';
     drawWaveform();
     drawSpectrum();
 }
 
-// ============ 播放控制 ============
-const playBtn = document.getElementById('btn-audio-play');
-const playTime = document.getElementById('play-time');
-let raf;
-playBtn.addEventListener('click', () => {
-    if (!audioBuffer) return;
-    if (isPlaying) {
-        isPlaying = false; playOffset = 0;
-        if (audioSource) audioSource.stop();
-        playBtn.textContent = '▶';
-        cancelAnimationFrame(raf);
-        return;
-    }
-    isPlaying = true; playStartTime = audioCtx.currentTime;
-    audioSource = audioCtx.createBufferSource();
-    audioSource.buffer = audioBuffer;
-    audioSource.connect(audioCtx.destination);
-    audioSource.start();
-    playBtn.textContent = '■';
-    function tick() {
-        if (!isPlaying) return;
-        const elapsed = audioCtx.currentTime - playStartTime + playOffset;
-        playTime.textContent = fmt(elapsed);
-        // 移动波形指示线
-        const canvas = document.getElementById('waveform-canvas');
-        const pct = Math.min(1, elapsed / audioBuffer.duration);
-        drawCursor(pct * canvas.width);
-        if (elapsed >= audioBuffer.duration) { isPlaying = false; playBtn.textContent = '▶'; playTime.textContent = fmt(audioBuffer.duration); }
-        else raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
+// 播放
+document.getElementById('btn-play').addEventListener('click', () => {
+    if (isPlaying) { isPlaying = false; audioSource?.stop(); document.getElementById('btn-play').textContent='▶'; cancelAnimationFrame(raf); return; }
+    isPlaying = true; playStart = audioCtx.currentTime;
+    audioSource = audioCtx.createBufferSource(); audioSource.buffer = audioBuffer; audioSource.connect(audioCtx.destination);
+    audioSource.start(); document.getElementById('btn-play').textContent='■';
+    (function tick(){ if(!isPlaying) return; document.getElementById('play-time').textContent = fmt(Math.min(audioCtx.currentTime-playStart,audioBuffer.duration)); if(audioCtx.currentTime-playStart>=audioBuffer.duration){isPlaying=false;document.getElementById('btn-play').textContent='▶';} else raf=requestAnimationFrame(tick); })();
 });
 
-// ============ 波形图 ============
+// 波形
 function drawWaveform() {
-    const canvas = document.getElementById('waveform-canvas');
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-
-    const data = audioBuffer.getChannelData(0);
-    const step = Math.ceil(data.length / w);
-
-    // 背景网格
-    ctx.strokeStyle = '#E0D8CC';
-    ctx.lineWidth = 0.5;
-    for (let y = 0; y < h; y += h/4) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-
-    // 波形
+    const c = document.getElementById('waveform-canvas'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+    const data = audioBuffer.getChannelData(0), step = Math.ceil(data.length / w);
+    ctx.fillStyle = '#F5F0E8'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#8B2500';
     for (let i = 0; i < w; i++) {
         let max = 0;
         for (let j = 0; j < step; j++) { const idx = i*step+j; if(idx<data.length) max = Math.max(max, Math.abs(data[idx])); }
-        const barH = max * (h/2);
-        ctx.fillRect(i, h/2 - barH, 1.5, Math.max(1, barH * 2));
+        ctx.fillRect(i, h/2 - max*(h/2), 1.5, Math.max(1, max*h));
     }
-
-    // 时间刻度
+    ctx.strokeStyle = '#C4B8A8'; ctx.lineWidth = 0.5;
+    for (let y = 0; y <= h; y += h/4) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
     ctx.fillStyle = '#9B9B9B'; ctx.font = '10px sans-serif';
-    const duration = audioBuffer.duration;
-    for (let i = 0; i <= duration; i += Math.max(1, Math.floor(duration/8))) {
-        const x = (i / duration) * w;
-        ctx.fillText(fmt(i), x - 10, h - 3);
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-    }
+    for (let i = 0; i <= audioBuffer.duration; i += Math.max(1, Math.floor(audioBuffer.duration/8))) { ctx.fillText(fmt(i), (i/audioBuffer.duration)*w-10, h-3); }
 }
 
-function drawCursor(x) {
-    const canvas = document.getElementById('waveform-canvas');
-    const ctx = canvas.getContext('2d');
-    drawWaveform();
-    ctx.strokeStyle = '#e07a5f'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-}
-
-// ============ 频谱图 ============
 function drawSpectrum() {
-    const canvas = document.getElementById('spectrum-canvas');
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-
-    // 用一小段音频做频谱
-    const data = audioBuffer.getChannelData(0).slice(0, Math.min(audioBuffer.length, audioBuffer.sampleRate * 2));
-    const fft = new Float32Array(data);
-    ctx.fillStyle = '#8B2500';
-    const bars = 120;
-    const barW = w / bars;
-    for (let i = 0; i < bars; i++) {
-        const freqIndex = Math.floor((i / bars) * fft.length);
-        const val = Math.abs(fft[freqIndex] || 0);
-        const barH = Math.min(h, val * h * 10);
-        ctx.fillRect(i * barW, h - barH, barW - 1, barH);
-    }
-    // 频率标签
-    ctx.fillStyle = '#9B9B9B'; ctx.font = '10px sans-serif';
-    for (let i = 0; i <= 4; i++) { ctx.fillText((i*5)+'kHz', (i/4)*(w-30), 12); }
+    const c = document.getElementById('spectrum-canvas'), ctx = c.getContext('2d'), w = c.width, h = c.height;
+    const data = audioBuffer.getChannelData(0).slice(0, Math.min(audioBuffer.length, audioBuffer.sampleRate*2));
+    ctx.fillStyle = '#F5F0E8'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#8B2500'; const bars = 100, bw = w / bars;
+    for (let i = 0; i < bars; i++) { const v = Math.abs(data[Math.floor(i/bars*data.length)]||0); ctx.fillRect(i*bw, h-v*h*5, bw-1, v*h*5); }
 }
 
-// ============ 处理操作 ============
-const resultDiv = document.getElementById('tools-result');
-function showResult(msg, url) { resultDiv.innerHTML = url ? `<p>${msg} <a href="${url}" download>下载</a></p>` : `<p>${msg}</p>`; }
-
+// 处理
+function showResult(m, u) { document.getElementById('tools-result').innerHTML = u ? `<p>${m} <a href="${u}" download>下载</a></p>` : `<p>${m}</p>`; }
 async function doTrim() {
-    const start = parseFloat(document.getElementById('trim-start').value);
-    const end = parseFloat(document.getElementById('trim-end').value);
     const fd = new FormData(); fd.append('file', currentFile);
-    const r = await fetch(`/api/audio/trim?start=${start}&end=${end}`, { method: 'POST', body: fd });
-    const d = await r.json();
-    showResult(d.success ? `裁剪完成(${start}s-${end}s)` : '裁剪失败', d.url);
+    const r = await fetch(`/api/audio/trim?start=${document.getElementById('trim-start').value}&end=${document.getElementById('trim-end').value}`, { method: 'POST', body: fd });
+    const d = await r.json(); showResult(d.success ? '裁剪完成' : '裁剪失败', d.url);
 }
-
 async function doPitchShift() {
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch(`/api/audio/pitch?shift=${pitchShift}`, { method: 'POST', body: fd });
-    const d = await r.json();
-    showResult(d.success ? `变调完成(shift:${pitchShift})` : '变调失败', d.url);
+    const d = await r.json(); showResult(d.success ? '变调完成' : '变调失败', d.url);
 }
-
 function adjPitch(d) { pitchShift += d; document.getElementById('pitch-value').textContent = pitchShift; }
-
 async function doNormalize() {
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch('/api/audio/normalize', { method: 'POST', body: fd });
-    const d = await r.json();
-    showResult(d.success ? '归一化完成' : '归一化失败', d.url);
+    const d = await r.json(); showResult(d.success ? '归一化完成' : '归一化失败', d.url);
 }
-
 async function doAnalyze() {
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch('/api/audio/analyze', { method: 'POST', body: fd });
     const d = await r.json();
-    if (d.success) {
-        scoreText = d.score_text; scoreNotes = d.notes || [];
+    if (d.success) { scoreText = d.score_text; scoreNotes = d.notes || [];
         document.getElementById('score-result-card').style.display = 'block';
         document.getElementById('score-text').textContent = scoreText;
-        if (scoreNotes.length) {
-            document.getElementById('score-notes-list').innerHTML = '<div class="score-notes-grid">' +
-                scoreNotes.map(n => `<span class="score-note-badge">${n.note}</span>`).join('') +
-                `<span class="text-secondary" style="font-size:12px;">共 ${scoreNotes.length} 个音符</span></div>`;
-        }
-    } else { alert('分析失败: ' + d.error); }
+        document.getElementById('score-notes-list').innerHTML = scoreNotes.map(n=>`<span class="score-note-badge">${n.note}</span>`).join('') + `<span class="text-secondary"> 共${scoreNotes.length}音符</span>`; }
+    else alert('分析失败: '+d.error);
 }
-
 async function saveToEditor() {
-    if (!scoreText) return;
-    const r = await fetch('/api/score', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ title: currentFile.name.replace(/\.[^.]+$/,''), notes_data: scoreText })
-    });
-    const d = await r.json();
-    if (d.success) window.location.href = '/editor';
-    else alert('保存失败');
+    const r = await fetch('/api/score', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:currentFile.name.replace(/\.[^.]+$/,''), notes_data:scoreText}) });
+    const d = await r.json(); if(d.success) window.location.href='/editor'; else alert('保存失败');
 }
 
-function fmt(sec) { const m = Math.floor(sec/60), s = Math.floor(sec%60); return `${m}:${s.toString().padStart(2,'0')}`; }
-
-// ============ 录音功能 ============
-let mediaRecorder, recordChunks = [], isRecording = false;
-let recordStream, recordCtx, recordAnalyser, recordTimer, recordRaf;
-
+// 录音
+let mediaRecorder, recordChunks, recording, recordStream, recordCtx, recordRaf;
 async function toggleRecord() {
-    const area = document.getElementById('record-area');
-    const btn = document.getElementById('btn-record');
-
-    if (isRecording) {
-        stopRecord();
-        return;
-    }
-
+    if (recording) { stopRecord(); return; }
     try {
         recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         recordCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = recordCtx.createMediaStreamSource(recordStream);
-        recordAnalyser = recordCtx.createAnalyser();
-        recordAnalyser.fftSize = 256;
-        source.connect(recordAnalyser);
-
-        mediaRecorder = new MediaRecorder(recordStream);
-        recordChunks = [];
+        const src = recordCtx.createMediaStreamSource(recordStream), ana = recordCtx.createAnalyser(); ana.fftSize = 256; src.connect(ana);
+        mediaRecorder = new MediaRecorder(recordStream); recordChunks = [];
         mediaRecorder.ondataavailable = e => recordChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordChunks, { type: 'audio/wav' });
-            currentFile = new File([blob], `录音_${new Date().toLocaleString().replace(/[/: ]/g, '-')}.wav`, { type: 'audio/wav' });
-            const reader = new FileReader();
-            reader.onload = async () => {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                audioBuffer = await audioCtx.decodeAudioData(reader.result);
-                showAudioInfo();
-            };
-            reader.readAsArrayBuffer(blob);
-            document.getElementById('record-status').textContent = '录音完成，已加载';
+        mediaRecorder.onstop = async () => {
+            recording = false; const blob = new Blob(recordChunks, { type: 'audio/wav' });
+            currentFile = new File([blob], '录音_' + Date.now() + '.wav', { type: 'audio/wav' });
+            const ab = await blob.arrayBuffer(); audioCtx = new (window.AudioContext||window.webkitAudioContext)(); audioBuffer = await audioCtx.decodeAudioData(ab);
+            showInfo();
         };
-
-        mediaRecorder.start();
-        isRecording = true;
-        area.style.display = 'block';
-        btn.textContent = '⏹ 停止';
-        btn.classList.add('active');
+        mediaRecorder.start(); recording = true;
+        document.getElementById('record-panel').style.display = 'block'; document.getElementById('upload-area').style.display = 'none';
         document.getElementById('record-dot').classList.add('blink');
-        document.getElementById('upload-area').style.display = 'none';
-
-        let startTime = Date.now();
-        recordTimer = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            document.getElementById('record-time').textContent = fmt(elapsed / 1000);
-        }, 100);
-
-        drawRecordWave();
-    } catch (e) {
-        alert('无法访问麦克风: ' + e.message);
-    }
+        let st = Date.now(); setInterval(() => { if(recording) document.getElementById('record-time').textContent = fmt((Date.now()-st)/1000); }, 100);
+        drawRecord();
+    } catch(e) { alert('无法访问麦克风: '+e.message); }
 }
+function stopRecord() { if(!recording) return; mediaRecorder.stop(); recordStream.getTracks().forEach(t=>t.stop()); cancelAnimationFrame(recordRaf); document.getElementById('record-panel').style.display='none'; document.getElementById('upload-area').style.display='block'; document.getElementById('record-dot').classList.remove('blink'); }
+function drawRecord() { if(!recording) return; const c=document.getElementById('record-canvas'),ctx=c.getContext('2d'),w=c.width,h=c.height; const buf=new Uint8Array(256); recordCtx.createAnalyser().getByteFrequencyData(buf); ctx.fillStyle='#F5F0E8';ctx.fillRect(0,0,w,h);ctx.fillStyle='#8B2500'; for(let i=0;i<buf.length;i++){ctx.fillRect(i*(w/256),h-(buf[i]/255)*h,w/256-1,(buf[i]/255)*h);} recordRaf=requestAnimationFrame(drawRecord); }
 
-function stopRecord() {
-    if (!isRecording) return;
-    mediaRecorder.stop();
-    recordStream.getTracks().forEach(t => t.stop());
-    isRecording = false;
-    clearInterval(recordTimer);
-    cancelAnimationFrame(recordRaf);
-
-    const btn = document.getElementById('btn-record');
-    btn.textContent = '⏺ 录音';
-    btn.classList.remove('active');
-    document.getElementById('record-dot').classList.remove('blink');
-    document.getElementById('upload-area').style.display = 'block';
-    document.getElementById('btn-stop-record').style.display = 'none';
-}
-
-document.getElementById('btn-stop-record').addEventListener('click', stopRecord);
-
-function drawRecordWave() {
-    if (!isRecording) return;
-    const canvas = document.getElementById('record-canvas');
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    const buf = new Uint8Array(recordAnalyser.frequencyBinCount);
-    recordAnalyser.getByteFrequencyData(buf);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#8B2500';
-
-    const barW = w / buf.length;
-    for (let i = 0; i < buf.length; i++) {
-        const barH = (buf[i] / 255) * h;
-        ctx.fillRect(i * barW, h - barH, barW - 1, barH);
-    }
-
-    recordRaf = requestAnimationFrame(drawRecordWave);
-}
-
-function showAudioInfo() {
-    const info = document.getElementById('audio-info');
-    info.innerHTML = `
-        <div class="info-row"><span>文件：</span><strong>${currentFile.name}</strong></div>
-        <div class="info-row"><span>大小：</span>${(currentFile.size/1024/1024).toFixed(1)} MB</div>
-        <div class="info-row"><span>时长：</span>${fmt(audioBuffer.duration)}</div>
-        <div class="info-row"><span>采样率：</span>${audioBuffer.sampleRate} Hz</div>
-        <div class="info-row"><span>声道：</span>${audioBuffer.numberOfChannels}</div>`;
-    document.getElementById('play-duration').textContent = fmt(audioBuffer.duration);
-    document.getElementById('trim-end').value = Math.round(audioBuffer.duration);
-    document.getElementById('btn-audio-play').disabled = false;
-    document.getElementById('wave-card').style.display = 'block';
-    document.getElementById('spectrum-card').style.display = 'block';
-    document.getElementById('tools-card').style.display = 'block';
-    document.getElementById('compare-card').style.display = 'block';
-    document.getElementById('ref-name').textContent = currentFile.name;
-    drawWaveform();
-    drawSpectrum();
-}
-
-// ============ 对比练习 ============
-let selfRecorder, selfChunks = [], isSelfRecording = false, selfStream, selfBlob, selfBuffer, selfTimer;
-
-document.getElementById('btn-self-record').addEventListener('click', async () => {
-    const area = document.getElementById('self-record-area');
-    if (isSelfRecording) {
-        selfRecorder.stop(); selfStream.getTracks().forEach(t => t.stop());
-        document.getElementById('btn-compare').disabled = false;
-        return;
-    }
-    try {
-        selfStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        selfRecorder = new MediaRecorder(selfStream); selfChunks = [];
-        selfRecorder.ondataavailable = e => selfChunks.push(e.data);
-        selfRecorder.onstop = async () => {
-            isSelfRecording = false; clearInterval(selfTimer);
-            selfBlob = new Blob(selfChunks, { type: 'audio/wav' });
-            const ab = await selfBlob.arrayBuffer();
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            selfBuffer = await ctx.decodeAudioData(ab);
-            document.getElementById('self-time').textContent = fmt(selfBuffer.duration);
-            document.getElementById('self-dot').classList.remove('blink');
-            document.getElementById('btn-self-record').textContent = '录制我的演奏';
-            document.getElementById('self-record-area').style.display = 'none';
-        };
-        selfRecorder.start(); isSelfRecording = true;
-        area.style.display = 'flex'; document.getElementById('self-dot').classList.add('blink');
-        document.getElementById('btn-self-record').textContent = '停止';
-        let start = Date.now();
-        selfTimer = setInterval(() => document.getElementById('self-time').textContent = fmt((Date.now() - start) / 1000), 100);
-    } catch (e) { alert('无法访问麦克风: ' + e.message); }
-});
-
-document.getElementById('btn-compare').addEventListener('click', () => {
-    if (!audioBuffer || !selfBuffer) return;
-    const refNotes = extractPitches(audioBuffer), selfNotes = extractPitches(selfBuffer);
-    let matched = 0, missed = 0;
-    const diff = refNotes.map((n, i) => {
-        const s = selfNotes[i], ok = s && Math.abs(n.freq - s.freq) < 20;
-        if (ok) matched++; else missed++;
-        return {...n, match: ok};
-    });
-    document.getElementById('match-rate').textContent = Math.round(matched / (refNotes.length || 1) * 100) + '%';
-    document.getElementById('matched-count').textContent = matched;
-    document.getElementById('missed-count').textContent = missed;
-    document.getElementById('compare-result').style.display = 'block';
-    document.getElementById('diff-notes').innerHTML = diff.map(n =>
-        `<span class="diff-note ${n.match ? 'match' : 'miss'}">${n.note}</span>`).join('');
-});
-
-function extractPitches(buffer) {
-    const data = buffer.getChannelData(0), sr = buffer.sampleRate, notes = [];
-    const frameSize = 2048; let lastFreq = 0;
-    for (let i = 0; i < data.length - frameSize; i += frameSize/2) {
-        const frame = data.slice(i, i + frameSize);
-        let sum = 0; for (let v of frame) sum += v;
-        const mean = sum / frame.length;
-        let mC = 0, mL = 0;
-        for (let lag = 40; lag < frame.length/2; lag++) {
-            let c = 0;
-            for (let j = 0; j < frame.length-lag; j++) c += (frame[j]-mean)*(frame[j+lag]-mean);
-            if (c > mC) { mC = c; mL = lag; }
-        }
-        const freq = mL > 0 ? sr / mL : 0;
-        if (freq > 50 && freq < 2000 && Math.abs(freq - lastFreq) > 10) {
-            const st = Math.round(12 * Math.log2(freq / 440)) + 69;
-            const map = {'C':'1','D':'2','E':'3','F':'4','G':'5','A':'6','B':'7'};
-            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-            notes.push({ note: map[names[st%12]]||names[st%12], freq: Math.round(freq) });
-            lastFreq = freq;
-        }
-    }
-    return notes;
-}
-
+function fmt(sec) { const m = Math.floor(sec/60), s = Math.floor(sec%60); return `${m}:${s.toString().padStart(2,'0')}`; }
 </script>
 {% endblock %}

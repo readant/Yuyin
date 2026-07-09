@@ -1715,6 +1715,44 @@ body {
 .diff-note.match { background: #e8f5e9; color: #2e7d32; }
 .diff-note.miss { background: #ffebee; color: #c62828; }
 
+/* ==================== 仪表盘布局 ==================== */
+.dashboard-layout { max-width: 1100px; }
+.dash-row { display: flex; gap: var(--space-lg); margin-bottom: var(--space-lg); }
+.dash-col { flex: 1; }
+.col-8 { flex: 2; }
+.col-6 { flex: 1; }
+.col-4 { flex: 1; max-width: 300px; }
+
+.dash-actions { display: flex; gap: var(--space-xs); }
+.dash-info .info-row { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+.dash-info .info-row strong { color: var(--text-primary); }
+
+.waveform-dash { width: 100%; border-radius: var(--radius-md); background: #F5F0E8; display: block; }
+
+.wave-controls { display: flex; align-items: center; gap: var(--space-sm); font-size: 13px; color: var(--text-secondary); }
+
+.process-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-md); }
+.process-item { display: flex; flex-direction: column; gap: var(--space-xs); font-size: 13px; color: var(--text-secondary); }
+.input-row { display: flex; align-items: center; gap: var(--space-xs); }
+
+.record-panel { margin-top: 12px; }
+.record-header { display: flex; align-items: center; gap: 12px; }
+
+/* ==================== 练习室布局 ==================== */
+.practice-room { max-width: 1100px; }
+.pr-top { margin-bottom: var(--space-lg); }
+.pr-mid { display: flex; gap: var(--space-lg); margin-bottom: var(--space-lg); }
+.pr-score { flex: 2; }
+.pr-fingering { flex: 1; }
+.pr-bottom { }
+
+.pr-score-preview { display: flex; flex-wrap: wrap; gap: 4px; font-size: 18px; }
+
+.feedback-row { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 20px 0; }
+.feedback-note-large { font-size: 36px; font-weight: 700; color: var(--text-primary); }
+.feedback-arrow { font-size: 24px; color: var(--text-tertiary); }
+.feedback-status-lg { font-size: 28px; font-weight: 600; }
+
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
 .bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }

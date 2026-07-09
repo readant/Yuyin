@@ -12,7 +12,8 @@
 </head>
 <body>
     <div class="app-container">
-        <nav class="sidebar">
+        <div class="sidebar-trigger" id="sidebar-trigger"></div>
+        <nav class="sidebar auto-hide" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-mark">余</div>
@@ -77,6 +78,14 @@
             document.body.style.backgroundAttachment = 'fixed';
         }
     }).catch(() => {});
+
+    // 侧边栏自动隐藏
+    const trigger = document.getElementById('sidebar-trigger');
+    const sidebar = document.getElementById('sidebar');
+    if (trigger && sidebar) {
+        trigger.addEventListener('mouseenter', () => sidebar.classList.add('visible'));
+        sidebar.addEventListener('mouseleave', () => sidebar.classList.remove('visible'));
+    }
     </script>
     {% block scripts %}{% endblock %}
 </body>

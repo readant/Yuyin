@@ -278,6 +278,36 @@ async def get_scores():
     return {"scores": scores}
 
 
+@app.get("/api/score/track/{track_id}")
+async def get_score_for_track(track_id: int):
+    """根据曲目ID查找匹配的简谱"""
+    track = music_library.get_track_by_id(track_id)
+    if not track:
+        return {"score": None}
+
+    db = DatabaseManager()
+    session = db.get_session()
+    try:
+        from src.domain.models.database import Score
+        # 按标题模糊匹配
+        score = session.query(Score).filter(Score.title.contains(track.title)).first()
+        if not score:
+            score = session.query(Score).order_by(Score.updated_at.desc()).first()
+        if score:
+            return {
+                "score": {
+                    "id": score.id,
+                    "title": score.title,
+                    "notes_data": score.notes_data,
+                    "tempo": score.tempo,
+                    "key": score.key_signature,
+                }
+            }
+        return {"score": None}
+    finally:
+        session.close()
+
+
 @app.get("/api/score/{score_id}")
 async def get_score(score_id: int):
     """获取单个简谱"""

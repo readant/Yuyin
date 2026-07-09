@@ -1,103 +1,173 @@
 {% extends "base.html" %}
 
-{% block title %}余音 - 播放器{% endblock %}
+{% block title %}余音 - 欣赏{% endblock %}
 
 {% block content %}
-<div class="player-layout">
-    <!-- 曲目信息 -->
-    <div class="player-info">
-        <h2 id="track-title" class="player-title">未选择曲目</h2>
-        <p id="track-artist" class="player-artist">请从曲库选择一首歌曲</p>
-    </div>
+<!-- 沉浸式播放器 -->
+<div class="immersive-player" id="immersive-player">
+    <!-- 动态背景 -->
+    <div class="player-bg" id="player-bg"></div>
 
-    <!-- 唱片可视化 -->
-    <div class="player-vinyl">
-        <div class="vinyl-disc" id="vinyl-disc">
-            <div class="vinyl-inner">
-                <span class="vinyl-note">~</span>
+    <!-- 主内容区 -->
+    <div class="player-main">
+        <!-- 曲目信息 -->
+        <div class="player-info-float">
+            <h1 id="track-title" class="immersive-title">未选择曲目</h1>
+            <p id="track-artist" class="immersive-artist">请从曲库选择一首歌曲</p>
+        </div>
+
+        <!-- 唱片 -->
+        <div class="vinyl-container">
+            <div class="vinyl-disc" id="vinyl-disc">
+                <div class="vinyl-grooves"></div>
+                <div class="vinyl-inner">
+                    <span class="vinyl-note">~</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 进度条 -->
-    <div class="player-progress">
-        <span id="current-time" class="time">0:00</span>
-        <input type="range" id="progress-slider" class="progress-slider" min="0" max="100" value="0" step="0.1">
-        <span id="total-time" class="time">0:00</span>
-    </div>
-
-    <!-- 控制按钮 -->
-    <div class="player-controls">
-        <button id="btn-prev" class="control-btn" title="上一首">|&lt;</button>
-        <button id="btn-play" class="play-btn" title="播放/暂停">&gt;</button>
-        <button id="btn-next" class="control-btn" title="下一首">&gt;|</button>
-    </div>
-
-    <!-- 音量 -->
-    <div class="player-volume">
-        <span class="volume-label">音量</span>
-        <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="80">
-    </div>
-
-    <!-- 简谱显示 -->
-    <div class="score-display" id="score-display" style="display: none;">
-        <div class="score-header">
-            <span class="score-label">简谱</span>
-            <a href="/editor" class="btn btn-sm">编辑简谱</a>
+    <!-- 底部控制区（悬停显示） -->
+    <div class="player-controls-area" id="controls-area">
+        <!-- 进度条 -->
+        <div class="progress-container">
+            <span id="current-time" class="progress-time">0:00</span>
+            <div class="progress-bar" id="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+                <div class="progress-thumb" id="progress-thumb"></div>
+            </div>
+            <span id="total-time" class="progress-time">0:00</span>
         </div>
-        <div id="score-notes" class="score-notes"></div>
-    </div>
 
-    <!-- 指法显示 -->
-    <div class="fingering-display" id="fingering-display" style="display: none;">
-        <div class="fingering-label">当前指法</div>
-        <div id="fingering-holes" class="fingering-holes"></div>
-        <div id="fingering-note" class="fingering-note-name"></div>
+        <!-- 控制按钮 -->
+        <div class="controls-row">
+            <div class="controls-left">
+                <button id="btn-speed" class="ctrl-btn speed-btn" title="播放速度">1x</button>
+                <button id="btn-ab" class="ctrl-btn ab-btn" title="A-B循环">A-B</button>
+            </div>
+
+            <div class="controls-center">
+                <button id="btn-prev" class="ctrl-btn" title="上一首">|&lt;</button>
+                <button id="btn-play" class="play-btn-main" title="播放/暂停">&gt;</button>
+                <button id="btn-next" class="ctrl-btn" title="下一首">&gt;|</button>
+            </div>
+
+            <div class="controls-right">
+                <button id="btn-mode" class="ctrl-btn" title="播放模式">顺序</button>
+                <button id="btn-list" class="ctrl-btn" title="播放列表">列表</button>
+                <button id="btn-volume" class="ctrl-btn" title="音量">音量</button>
+            </div>
+        </div>
+
+        <!-- 音量滑块（点击音量按钮显示） -->
+        <div class="volume-popup" id="volume-popup" style="display: none;">
+            <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="80" orient="vertical">
+        </div>
     </div>
 </div>
+
+<!-- 播放列表面板 -->
+<div class="side-panel" id="playlist-panel">
+    <div class="panel-header">
+        <h3>播放列表</h3>
+        <button id="btn-close-list" class="panel-close">×</button>
+    </div>
+    <div class="panel-content" id="playlist-content">
+        <p class="empty-hint">暂无曲目</p>
+    </div>
+</div>
+
+<!-- 遮罩层 -->
+<div class="panel-overlay" id="panel-overlay" style="display: none;"></div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // ==================== 元素引用 ====================
     const audio = document.getElementById('audio-player');
     const titleEl = document.getElementById('track-title');
     const artistEl = document.getElementById('track-artist');
     const playBtn = document.getElementById('btn-play');
     const prevBtn = document.getElementById('btn-prev');
     const nextBtn = document.getElementById('btn-next');
-    const progressSlider = document.getElementById('progress-slider');
-    const volumeSlider = document.getElementById('volume-slider');
+    const speedBtn = document.getElementById('btn-speed');
+    const abBtn = document.getElementById('btn-ab');
+    const modeBtn = document.getElementById('btn-mode');
+    const listBtn = document.getElementById('btn-list');
+    const volumeBtn = document.getElementById('btn-volume');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    const progressThumb = document.getElementById('progress-thumb');
     const currentTimeEl = document.getElementById('current-time');
     const totalTimeEl = document.getElementById('total-time');
     const vinylDisc = document.getElementById('vinyl-disc');
-    const scoreDisplay = document.getElementById('score-display');
-    const scoreNotes = document.getElementById('score-notes');
-    const fingeringDisplay = document.getElementById('fingering-display');
-    const fingeringHoles = document.getElementById('fingering-holes');
-    const fingeringNote = document.getElementById('fingering-note');
+    const controlsArea = document.getElementById('controls-area');
+    const playlistPanel = document.getElementById('playlist-panel');
+    const playlistContent = document.getElementById('playlist-content');
+    const panelOverlay = document.getElementById('panel-overlay');
+    const volumePopup = document.getElementById('volume-popup');
+    const volumeSlider = document.getElementById('volume-slider');
+    const playerBg = document.getElementById('player-bg');
 
+    // ==================== 状态 ====================
     let currentTrack = null;
     let trackList = [];
     let currentIndex = -1;
+    let playMode = 'sequence'; // sequence / shuffle / single
+    let speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+    let speedIndex = 2; // 默认 1x
+    let abA = null; // A-B循环起点
+    let abB = null; // A-B循环终点
+    let isAbMode = false;
 
-    // 从URL获取track参数
-    const params = new URLSearchParams(window.location.search);
-    const trackId = params.get('track');
 
-    // 加载曲目列表
+
+    // ==================== 加载曲目列表 ====================
     async function loadTracks() {
-        const resp = await fetch('/api/tracks');
-        const data = await resp.json();
-        trackList = data.tracks || [];
-        if (trackId) {
-            currentIndex = trackList.findIndex(t => t.id == trackId);
-            if (currentIndex >= 0) loadTrack(trackList[currentIndex]);
+        try {
+            const resp = await fetch('/api/tracks');
+            const data = await resp.json();
+            trackList = data.tracks || [];
+            renderPlaylist();
+
+            // 从URL获取track参数
+            const params = new URLSearchParams(window.location.search);
+            const trackId = params.get('track');
+            if (trackId) {
+                currentIndex = trackList.findIndex(t => t.id == trackId);
+                if (currentIndex >= 0) loadTrack(trackList[currentIndex]);
+            }
+        } catch (e) {
+            console.error('加载曲目失败:', e);
         }
     }
 
-    // 加载并播放曲目
-    async function loadTrack(track) {
+    // ==================== 渲染播放列表 ====================
+    function renderPlaylist() {
+        if (trackList.length === 0) {
+            playlistContent.innerHTML = '<p class="empty-hint">暂无曲目，请先扫描曲库</p>';
+            return;
+        }
+        playlistContent.innerHTML = trackList.map((t, i) => `
+            <div class="playlist-item ${i === currentIndex ? 'active' : ''}" onclick="playFromList(${i})">
+                <span class="playlist-index">${i + 1}</span>
+                <div class="playlist-info">
+                    <span class="playlist-title">${t.title}</span>
+                    <span class="playlist-artist">${t.artist || '未知'}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    window.playFromList = function(index) {
+        currentIndex = index;
+        loadTrack(trackList[index]);
+        renderPlaylist();
+    };
+
+    // ==================== 加载并播放曲目 ====================
+    function loadTrack(track) {
         currentTrack = track;
         titleEl.textContent = track.title;
         artistEl.textContent = track.artist || '未知艺术家';
@@ -107,9 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
         audio.play();
         playBtn.textContent = '||';
         vinylDisc.classList.add('playing');
+
+        // 动态背景色
+        updateBackground();
     }
 
-    // 播放/暂停
+    // ==================== 播放控制 ====================
     playBtn.addEventListener('click', () => {
         if (!audio.src) return;
         if (audio.paused) {
@@ -123,61 +196,168 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 上一首/下一首
     prevBtn.addEventListener('click', () => {
         if (trackList.length === 0) return;
-        currentIndex = (currentIndex - 1 + trackList.length) % trackList.length;
+        if (playMode === 'shuffle') {
+            currentIndex = Math.floor(Math.random() * trackList.length);
+        } else {
+            currentIndex = (currentIndex - 1 + trackList.length) % trackList.length;
+        }
         loadTrack(trackList[currentIndex]);
+        renderPlaylist();
     });
 
     nextBtn.addEventListener('click', () => {
         if (trackList.length === 0) return;
-        currentIndex = (currentIndex + 1) % trackList.length;
-        loadTrack(trackList[currentIndex]);
+        nextTrack();
     });
 
-    // 进度更新
-    audio.addEventListener('timeupdate', () => {
+    function nextTrack() {
+        if (playMode === 'shuffle') {
+            currentIndex = Math.floor(Math.random() * trackList.length);
+        } else if (playMode === 'single') {
+            // 单曲循环，重新播放当前曲目
+            audio.currentTime = 0;
+            audio.play();
+            return;
+        } else {
+            currentIndex = (currentIndex + 1) % trackList.length;
+        }
+        loadTrack(trackList[currentIndex]);
+        renderPlaylist();
+    }
+
+    // ==================== 进度条 ====================
+    let isDragging = false;
+
+    progressBar.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        updateProgress(e);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) updateProgress(e);
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    function updateProgress(e) {
         if (!audio.duration) return;
+        const rect = progressBar.getBoundingClientRect();
+        let pct = (e.clientX - rect.left) / rect.width;
+        pct = Math.max(0, Math.min(1, pct));
+        audio.currentTime = pct * audio.duration;
+    }
+
+    audio.addEventListener('timeupdate', () => {
+        if (!audio.duration || isDragging) return;
         const pct = (audio.currentTime / audio.duration) * 100;
-        progressSlider.value = pct;
+        progressFill.style.width = pct + '%';
+        progressThumb.style.left = pct + '%';
         currentTimeEl.textContent = formatTime(audio.currentTime);
+
+        // A-B循环
+        if (isAbMode && abA !== null && abB !== null) {
+            if (audio.currentTime >= abB) {
+                audio.currentTime = abA;
+            }
+        }
     });
 
     audio.addEventListener('loadedmetadata', () => {
         totalTimeEl.textContent = formatTime(audio.duration);
     });
 
-    // 进度拖动
-    progressSlider.addEventListener('input', (e) => {
-        if (!audio.duration) return;
-        audio.currentTime = (e.target.value / 100) * audio.duration;
+    // ==================== 播放结束 ====================
+    audio.addEventListener('ended', () => {
+        nextTrack();
     });
 
-    // 音量
+    // ==================== 倍速控制 ====================
+    speedBtn.addEventListener('click', () => {
+        speedIndex = (speedIndex + 1) % speeds.length;
+        const speed = speeds[speedIndex];
+        audio.playbackRate = speed;
+        speedBtn.textContent = speed + 'x';
+    });
+
+    // ==================== A-B循环 ====================
+    abBtn.addEventListener('click', () => {
+        if (abA === null) {
+            abA = audio.currentTime;
+            abBtn.textContent = 'A-';
+            abBtn.classList.add('active');
+        } else if (abB === null) {
+            abB = audio.currentTime;
+            abBtn.textContent = 'A-B';
+            isAbMode = true;
+        } else {
+            abA = null;
+            abB = null;
+            isAbMode = false;
+            abBtn.textContent = 'A-B';
+            abBtn.classList.remove('active');
+        }
+    });
+
+    // ==================== 播放模式 ====================
+    const modes = ['sequence', 'shuffle', 'single'];
+    const modeNames = ['顺序', '随机', '单曲'];
+    let modeIndex = 0;
+
+    modeBtn.addEventListener('click', () => {
+        modeIndex = (modeIndex + 1) % modes.length;
+        playMode = modes[modeIndex];
+        modeBtn.textContent = modeNames[modeIndex];
+    });
+
+    // ==================== 音量 ====================
+    volumeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        volumePopup.style.display = volumePopup.style.display === 'none' ? 'block' : 'none';
+    });
+
     volumeSlider.addEventListener('input', (e) => {
         audio.volume = e.target.value / 100;
     });
     audio.volume = 0.8;
 
-    // 播放结束
-    audio.addEventListener('ended', () => {
-        playBtn.textContent = '>';
-        vinylDisc.classList.remove('playing');
-        // 自动下一首
-        if (trackList.length > 0) {
-            currentIndex = (currentIndex + 1) % trackList.length;
-            loadTrack(trackList[currentIndex]);
-        }
+    document.addEventListener('click', () => {
+        volumePopup.style.display = 'none';
     });
 
+    // ==================== 播放列表面板 ====================
+    listBtn.addEventListener('click', () => {
+        playlistPanel.classList.add('open');
+        panelOverlay.style.display = 'block';
+    });
+
+    document.getElementById('btn-close-list').addEventListener('click', closePanel);
+    panelOverlay.addEventListener('click', closePanel);
+
+    function closePanel() {
+        playlistPanel.classList.remove('open');
+        panelOverlay.style.display = 'none';
+    }
+
+    // ==================== 背景（始终透明） ====================
+    function updateBackground() {
+        playerBg.style.background = 'transparent';
+    }
+
+    // ==================== 工具函数 ====================
     function formatTime(sec) {
+        if (!sec) return '0:00';
         const m = Math.floor(sec / 60);
         const s = Math.floor(sec % 60);
         return `${m}:${s.toString().padStart(2, '0')}`;
     }
 
+    // ==================== 初始化 ====================
     loadTracks();
+    updateBackground();
 });
 </script>
 {% endblock %}

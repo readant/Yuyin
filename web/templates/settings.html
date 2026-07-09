@@ -37,25 +37,82 @@
 
     <div class="card">
         <div class="card-header">
+            <h2 class="card-title">界面显示</h2>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">字体大小</label>
+                <select id="font-size" class="select">
+                    <option value="14">小（14px）</option>
+                    <option value="16" selected>中（16px）</option>
+                    <option value="18">大（18px）</option>
+                    <option value="20">特大（20px）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">内容区宽度</label>
+                <select id="content-width" class="select">
+                    <option value="960">窄（960px）</option>
+                    <option value="1200" selected>中（1200px）</option>
+                    <option value="1400">宽（1400px）</option>
+                    <option value="100%">全宽</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">侧边栏宽度</label>
+                <select id="sidebar-width" class="select">
+                    <option value="60">收窄（60px）</option>
+                    <option value="180" selected>中等（180px）</option>
+                    <option value="220">标准（220px）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">内容透明度</label>
+                <select id="content-opacity" class="select">
+                    <option value="1" selected>不透明（100%）</option>
+                    <option value="0.95">微透明（95%）</option>
+                    <option value="0.9">半透明（90%）</option>
+                    <option value="0.85">较透明（85%）</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-grid" style="margin-top: 12px;">
+            <div class="form-group">
+                <label class="form-label">主题模式</label>
+                <select id="theme-mode" class="select">
+                    <option value="light" selected>浅色</option>
+                    <option value="dark">深色</option>
+                    <option value="sepia">护眼（暖色）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">动画效果</label>
+                <select id="animation-toggle" class="select">
+                    <option value="on" selected>开启</option>
+                    <option value="off">关闭</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
             <h2 class="card-title">背景图片</h2>
         </div>
         <p class="card-hint" style="margin-bottom: 12px;">上传自定义背景图片，美化你的界面</p>
 
-        <!-- 上传区域 -->
         <div class="bg-upload-area" id="upload-area">
             <input type="file" id="bg-file-input" accept="image/*" style="display:none;">
             <p>点击或拖拽图片到此处上传</p>
             <p class="text-secondary" style="font-size: 12px;">支持 JPG、PNG、GIF 格式</p>
         </div>
 
-        <!-- 当前背景预览 -->
         <div id="current-bg-preview" class="bg-preview" style="display: none;">
             <p class="form-label">当前背景：</p>
             <img id="current-bg-img" class="bg-preview-img">
             <button id="btn-clear-bg" class="btn btn-sm btn-danger">恢复默认</button>
         </div>
 
-        <!-- 已上传图片列表 -->
         <div id="uploaded-bgs" class="uploaded-bgs"></div>
     </div>
 
@@ -105,13 +162,84 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentBgImg = document.getElementById('current-bg-img');
     const uploadedBgs = document.getElementById('uploaded-bgs');
 
-    // 加载设置
+    // ==================== 界面设置 ====================
+    const settingsConfig = {
+        'font-size': { default: '16', apply: (v) => document.documentElement.style.fontSize = v + 'px' },
+        'content-width': { default: '1200', apply: (v) => document.querySelector('.main-content').style.maxWidth = v },
+        'sidebar-width': { default: '180', apply: (v) => document.querySelector('.sidebar').style.width = v + 'px' },
+        'content-opacity': { default: '1', apply: (v) => document.querySelector('.main-content').style.opacity = v },
+        'theme-mode': { default: 'light', apply: (v) => applyTheme(v) },
+        'animation-toggle': { default: 'on', apply: (v) => applyAnimation(v) },
+    };
+
+    // 加载界面设置
+    Object.keys(settingsConfig).forEach(key => {
+        const saved = localStorage.getItem('yuyin_' + key) || settingsConfig[key].default;
+        const el = document.getElementById(key);
+        if (el) {
+            el.value = saved;
+            settingsConfig[key].apply(saved);
+            el.addEventListener('change', (e) => {
+                localStorage.setItem('yuyin_' + key, e.target.value);
+                settingsConfig[key].apply(e.target.value);
+            });
+        }
+    });
+
+    // 主题模式
+    function applyTheme(mode) {
+        const root = document.documentElement;
+        if (mode === 'dark') {
+            root.style.setProperty('--bg-primary', '#1a1a2e');
+            root.style.setProperty('--bg-secondary', '#16213e');
+            root.style.setProperty('--bg-panel', '#0f3460');
+            root.style.setProperty('--bg-elevated', '#1a1a2e');
+            root.style.setProperty('--text-primary', '#eaeaea');
+            root.style.setProperty('--text-secondary', '#a0a0a0');
+            root.style.setProperty('--text-tertiary', '#6b6b6b');
+            root.style.setProperty('--border-color', '#2a2a4a');
+            root.style.setProperty('--border-light', '#1a1a3a');
+            document.body.style.color = '#eaeaea';
+        } else if (mode === 'sepia') {
+            root.style.setProperty('--bg-primary', '#f5f0e1');
+            root.style.setProperty('--bg-secondary', '#ebe5d5');
+            root.style.setProperty('--bg-panel', '#faf7f0');
+            root.style.setProperty('--bg-elevated', '#fffef8');
+            root.style.setProperty('--text-primary', '#5c4b37');
+            root.style.setProperty('--text-secondary', '#8b7355');
+            root.style.setProperty('--text-tertiary', '#a89070');
+            root.style.setProperty('--border-color', '#d4c4a8');
+            root.style.setProperty('--border-light', '#e0d5c0');
+            document.body.style.color = '#5c4b37';
+        } else {
+            root.style.setProperty('--bg-primary', '#F5F0E8');
+            root.style.setProperty('--bg-secondary', '#EDE8DC');
+            root.style.setProperty('--bg-panel', '#FAF7F0');
+            root.style.setProperty('--bg-elevated', '#FFFFFF');
+            root.style.setProperty('--text-primary', '#2C2C2C');
+            root.style.setProperty('--text-secondary', '#6B6B6B');
+            root.style.setProperty('--text-tertiary', '#9B9B9B');
+            root.style.setProperty('--border-color', '#C4B8A8');
+            root.style.setProperty('--border-light', '#D4CFC4');
+            document.body.style.color = '#2C2C2C';
+        }
+    }
+
+    // 动画开关
+    function applyAnimation(value) {
+        if (value === 'off') {
+            document.body.classList.add('no-animation');
+        } else {
+            document.body.classList.remove('no-animation');
+        }
+    }
+
+    // ==================== 默认设置 ====================
     const savedKey = localStorage.getItem('yuyin_default_key') || 'D';
     const savedFingering = localStorage.getItem('yuyin_default_fingering') || '5';
     document.getElementById('default-key').value = savedKey;
     document.getElementById('default-fingering').value = savedFingering;
 
-    // 保存设置
     document.getElementById('default-key').addEventListener('change', (e) => {
         localStorage.setItem('yuyin_default_key', e.target.value);
     });
@@ -119,10 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('yuyin_default_fingering', e.target.value);
     });
 
-    // 点击上传区域
+    // ==================== 背景图片 ====================
     uploadArea.addEventListener('click', () => fileInput.click());
-
-    // 拖拽上传
     uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
     uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
     uploadArea.addEventListener('drop', (e) => {
@@ -130,13 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadArea.classList.remove('dragover');
         if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
     });
-
-    // 选择文件
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) uploadFile(e.target.files[0]);
     });
 
-    // 上传文件
     async function uploadFile(file) {
         if (!file.type.startsWith('image/')) { alert('只能上传图片文件'); return; }
         const formData = new FormData();
@@ -144,32 +267,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const resp = await fetch('/api/background/upload', { method: 'POST', body: formData });
             const data = await resp.json();
-            if (data.success) {
-                loadBackgrounds();
-                applyBackground(data.url);
-            } else {
-                alert('上传失败: ' + (data.error || ''));
-            }
-        } catch (e) {
-            alert('上传出错: ' + e.message);
-        }
+            if (data.success) { loadBackgrounds(); applyBackground(data.url); }
+            else { alert('上传失败: ' + (data.error || '')); }
+        } catch (e) { alert('上传出错: ' + e.message); }
     }
 
-    // 加载背景列表
     async function loadBackgrounds() {
         try {
             const resp = await fetch('/api/background');
             const data = await resp.json();
-
-            // 显示当前背景
             if (data.current) {
                 currentBgPreview.style.display = 'flex';
                 currentBgImg.src = data.current;
             } else {
                 currentBgPreview.style.display = 'none';
             }
-
-            // 显示已上传图片
             if (data.uploads && data.uploads.length > 0) {
                 uploadedBgs.innerHTML = '<p class="form-label">已上传图片：</p>' +
                     data.uploads.map(u => `
@@ -178,56 +290,36 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="bg-thumb-delete" onclick="event.stopPropagation(); deleteBg('${u.filename}')">×</button>
                         </div>
                     `).join('');
-            } else {
-                uploadedBgs.innerHTML = '';
-            }
-        } catch (e) {
-            console.error('加载背景失败:', e);
-        }
+            } else { uploadedBgs.innerHTML = ''; }
+        } catch (e) { console.error('加载背景失败:', e); }
     }
 
-    // 选择背景
     window.selectBg = async function(url) {
         try {
             await fetch('/api/background/select', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({path: url})
             });
-            applyBackground(url);
-            loadBackgrounds();
-        } catch (e) {
-            alert('选择失败: ' + e.message);
-        }
+            applyBackground(url); loadBackgrounds();
+        } catch (e) { alert('选择失败: ' + e.message); }
     };
 
-    // 删除背景
     window.deleteBg = async function(filename) {
         if (!confirm('确定要删除这张背景图片吗？')) return;
-        try {
-            await fetch('/api/background/' + filename, { method: 'DELETE' });
-            loadBackgrounds();
-        } catch (e) {
-            alert('删除失败: ' + e.message);
-        }
+        try { await fetch('/api/background/' + filename, { method: 'DELETE' }); loadBackgrounds(); }
+        catch (e) { alert('删除失败: ' + e.message); }
     };
 
-    // 清除背景
     document.getElementById('btn-clear-bg').addEventListener('click', async () => {
         try {
             await fetch('/api/background/select', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({path: ''})
             });
-            applyBackground(null);
-            loadBackgrounds();
-        } catch (e) {
-            alert('清除失败: ' + e.message);
-        }
+            applyBackground(null); loadBackgrounds();
+        } catch (e) { alert('清除失败: ' + e.message); }
     });
 
-    // 应用背景
     function applyBackground(url) {
         if (url) {
             document.body.style.backgroundImage = `url(${url})`;
@@ -237,11 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.style.backgroundAttachment = 'fixed';
         } else {
             document.body.style.backgroundImage = '';
-            document.body.style.backgroundColor = '';
         }
     }
 
-    // 加载练习统计
+    // ==================== 练习统计 ====================
     async function loadStats() {
         try {
             const resp = await fetch('/api/practice/stats');
@@ -250,16 +341,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('stat-count').textContent = data.total_count || 0;
             document.getElementById('stat-accuracy').textContent = (data.average_accuracy || 0) + '%';
             document.getElementById('stat-notes').textContent = data.total_notes || 0;
-        } catch (e) {
-            console.error('加载练习统计失败:', e);
-        }
+        } catch (e) { console.error('加载练习统计失败:', e); }
     }
 
-    // 初始化
+    // ==================== 初始化 ====================
     loadBackgrounds();
     loadStats();
-
-    // 页面加载时应用已保存的背景
     fetch('/api/background').then(r => r.json()).then(data => {
         if (data.current) applyBackground(data.current);
     });

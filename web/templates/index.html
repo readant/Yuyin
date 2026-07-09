@@ -144,8 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 scanStatus.textContent = `扫描完成，找到 ${data.count} 首曲目`;
                 scanStatus.className = 'scan-status success';
-    loadTracks();
-    loadScanDirs();
+                loadTracks();
                 loadScanDirs();
             } else {
                 scanStatus.textContent = '扫描失败：' + (data.error || '未知错误');

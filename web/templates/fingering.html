@@ -1,176 +1,160 @@
 {% extends "base.html" %}
 
-{% block title %}指法查询 - 余音{% endblock %}
+{% block title %}余音 - 指法速查{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">指法速查</h1>
-    <p class="page-subtitle">查询竹笛指法</p>
+    <p class="page-subtitle">查看竹笛各音符的按孔指法</p>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
-    <!-- 左侧：选择和显示 -->
-    <div>
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">选择音符</h2>
+<div class="fingering-layout">
+    <!-- 选择区 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">选择音符</h2>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">调性</label>
+                <select id="key-select" class="select">
+                    <option value="D">D调</option>
+                    <option value="G">G调</option>
+                    <option value="C">C调</option>
+                    <option value="F">F调</option>
+                    <option value="E">E调</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label class="form-label">指法类型</label>
+                <select id="type-select" class="select">
+                    <option value="5">筒音作5</option>
+                    <option value="1">筒音作1</option>
+                    <option value="2">筒音作2</option>
+                </select>
+            </div>
+        </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-lg);">
-                <div>
-                    <label style="display: block; margin-bottom: var(--space-xs); color: var(--text-secondary); font-size: 12px;">调性</label>
-                    <select class="select" id="key-select">
-                        <option value="D">D调</option>
-                        <option value="G">G调</option>
-                        <option value="C">C调</option>
-                        <option value="F">F调</option>
-                        <option value="E">E调</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: var(--space-xs); color: var(--text-secondary); font-size: 12px;">指法类型</label>
-                    <select class="select" id="fingering-select">
-                        <option value="5">筒音作5</option>
-                        <option value="1">筒音作1</option>
-                        <option value="2">筒音作2</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: var(--space-xs); color: var(--text-secondary); font-size: 12px;">音符</label>
-                    <select class="select" id="note-select">
-                        <option value="1">1 (Do)</option>
-                        <option value="2">2 (Re)</option>
-                        <option value="3">3 (Mi)</option>
-                        <option value="4">4 (Fa)</option>
-                        <option value="5">5 (Sol)</option>
-                        <option value="6">6 (La)</option>
-                        <option value="7">7 (Si)</option>
-                    </select>
-                </div>
-            </div>
+        <!-- 音符选择按钮 -->
+        <div id="note-buttons" class="note-buttons"></div>
+    </div>
 
-            <div class="card" style="text-align: center; margin-bottom: 0;">
-                <h3 style="color: var(--color-primary); margin-bottom: var(--space-lg);">指法图示</h3>
-                <div id="fingering-display" class="fingering-display">
-                    <div class="fingering-hole closed"></div>
-                    <div class="fingering-hole closed"></div>
-                    <div class="fingering-hole closed"></div>
-                    <div class="fingering-hole open"></div>
-                    <div class="fingering-hole open"></div>
-                    <div class="fingering-hole open"></div>
-                </div>
-                <p id="fingering-text" style="margin-top: var(--space-md); font-size: 20px; font-weight: 600; color: var(--text-primary);">---ooo</p>
-            </div>
+    <!-- 指法图示 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">指法图示</h2>
+        </div>
+        <div class="fingering-display-large">
+            <div id="fingering-holes" class="fingering-holes-large"></div>
+            <div id="fingering-note-name" class="fingering-note-name-large">选择一个音符</div>
         </div>
     </div>
 
-    <!-- 右侧：指法对照 -->
-    <div>
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">各指法对照</h2>
-            </div>
-
-            <div class="card" style="margin-bottom: var(--space-md); border-left: 3px solid var(--color-primary);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: var(--text-primary);">筒音作5</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">最常用</div>
-                    </div>
-                    <span id="fingering-5" style="font-family: monospace; font-size: 16px; letter-spacing: 2px;">---ooo</span>
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom: var(--space-md); border-left: 3px solid var(--color-secondary);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: var(--text-primary);">筒音作1</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">进阶指法</div>
-                    </div>
-                    <span id="fingering-1" style="font-family: monospace; font-size: 16px; letter-spacing: 2px;">ooooo</span>
-                </div>
-            </div>
-
-            <div class="card" style="border-left: 3px solid var(--color-accent);">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; color: var(--text-primary);">筒音作2</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">特殊调性</div>
-                    </div>
-                    <span id="fingering-2" style="font-family: monospace; font-size: 16px; letter-spacing: 2px;">---ooo</span>
-                </div>
-            </div>
+    <!-- 各指法对照表 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">各指法对照</h2>
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">音符说明</h2>
-            </div>
-            <div style="color: var(--text-secondary); font-size: 13px; line-height: 1.8;">
-                <p><span style="color: var(--color-primary);">o</span> = 按孔 (手指按住)</p>
-                <p><span style="color: var(--text-tertiary);">-</span> = 开孔 (手指松开)</p>
-                <p style="margin-top: var(--space-sm);">从上到下依次为第1孔至第6孔</p>
-            </div>
+        <div id="fingering-compare" class="fingering-compare">
+            <p class="placeholder-text">选择音符后显示对照</p>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-const fingeringData = {
-    '5': {
-        '1': [1, 1, 1, 0, 0, 0],
-        '2': [1, 1, 0, 0, 0, 0],
-        '3': [1, 0, 0, 0, 0, 0],
-        '4': [0, 1, 1, 0, 0, 0],
-        '5': [0, 1, 1, 1, 1, 1],
-        '6': [0, 0, 0, 0, 0, 1],
-        '7': [0, 0, 0, 0, 1, 1]
-    },
-    '1': {
-        '1': [1, 1, 1, 1, 1, 1],
-        '2': [1, 1, 1, 1, 1, 0],
-        '3': [1, 1, 1, 1, 0, 0],
-        '4': [1, 1, 1, 0, 0, 0],
-        '5': [1, 1, 0, 0, 0, 0],
-        '6': [1, 0, 0, 0, 0, 0],
-        '7': [0, 1, 1, 0, 0, 0]
-    },
-    '2': {
-        '1': [1, 1, 1, 0, 0, 0],
-        '2': [1, 1, 0, 0, 0, 0],
-        '3': [1, 0, 0, 0, 0, 0],
-        '4': [0, 1, 1, 0, 0, 0],
-        '5': [0, 1, 1, 1, 1, 1],
-        '6': [0, 0, 0, 0, 0, 1],
-        '7': [0, 0, 0, 0, 1, 1]
-    }
-};
+document.addEventListener('DOMContentLoaded', () => {
+    const keySelect = document.getElementById('key-select');
+    const typeSelect = document.getElementById('type-select');
+    const noteButtons = document.getElementById('note-buttons');
+    const fingeringHoles = document.getElementById('fingering-holes');
+    const fingeringNoteName = document.getElementById('fingering-note-name');
+    const fingeringCompare = document.getElementById('fingering-compare');
 
-function updateFingering() {
-    const fingeringType = document.getElementById('fingering-select').value;
-    const note = document.getElementById('note-select').value;
-    const fingering = fingeringData[fingeringType][note];
+    let currentNote = null;
 
-    if (fingering) {
-        const holes = document.querySelectorAll('#fingering-display .fingering-hole');
-        holes.forEach((hole, index) => {
-            hole.className = fingering[index] ? 'fingering-hole closed' : 'fingering-hole open';
-        });
+    // 加载音符按钮
+    async function loadNotes() {
+        const type = typeSelect.value;
+        try {
+            const resp = await fetch(`/api/notes?type=${type}`);
+            const data = await resp.json();
+            if (data.notes) {
+                noteButtons.innerHTML = data.notes.map(note => `
+                    <button class="note-btn" data-note="${note}">${note}</button>
+                `).join('');
 
-        const text = fingering.map(f => f ? 'o' : '-').join('');
-        document.getElementById('fingering-text').textContent = text;
-
-        for (const [type, data] of Object.entries(fingeringData)) {
-            const typeFingering = data[note];
-            if (typeFingering) {
-                document.getElementById(`fingering-${type}`).textContent = typeFingering.map(f => f ? 'o' : '-').join('');
+                noteButtons.querySelectorAll('.note-btn').forEach(btn => {
+                    btn.addEventListener('click', () => selectNote(btn.dataset.note));
+                });
             }
+        } catch (e) {
+            console.error('加载音符失败:', e);
         }
     }
-}
 
-document.getElementById('fingering-select').addEventListener('change', updateFingering);
-document.getElementById('note-select').addEventListener('change', updateFingering);
-updateFingering();
+    // 选择音符
+    async function selectNote(note) {
+        currentNote = note;
+
+        // 更新按钮状态
+        noteButtons.querySelectorAll('.note-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.note === note);
+        });
+
+        // 获取指法
+        const type = typeSelect.value;
+        try {
+            const resp = await fetch(`/api/fingering/${note}?type=${type}`);
+            const data = await resp.json();
+
+            if (data.fingering) {
+                // 显示指法图示（6个孔）
+                fingeringHoles.innerHTML = data.fingering.map((pressed, i) => `
+                    <div class="hole-large ${pressed ? 'pressed' : ''}">${i + 1}</div>
+                `).join('');
+                fingeringNoteName.textContent = note;
+            }
+        } catch (e) {
+            console.error('获取指法失败:', e);
+        }
+
+        // 加载对照表
+        loadCompare(note);
+    }
+
+    // 加载各指法对照
+    async function loadCompare(note) {
+        const types = ['5', '1', '2'];
+        const typeNames = {'5': '筒音作5', '1': '筒音作1', '2': '筒音作2'};
+
+        try {
+            const results = await Promise.all(types.map(async t => {
+                const resp = await fetch(`/api/fingering/${note}?type=${t}`);
+                return resp.json();
+            }));
+
+            fingeringCompare.innerHTML = results.map((r, i) => {
+                if (r.error) return '';
+                return `<div class="compare-item">
+                    <span class="compare-type">${typeNames[types[i]]}</span>
+                    <span class="compare-display">${r.display}</span>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            console.error('加载对照表失败:', e);
+        }
+    }
+
+    // 监听选择变化
+    keySelect.addEventListener('change', loadNotes);
+    typeSelect.addEventListener('change', () => {
+        loadNotes();
+        if (currentNote) selectNote(currentNote);
+    });
+
+    loadNotes();
+});
 </script>
 {% endblock %}

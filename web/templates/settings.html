@@ -1,112 +1,109 @@
 {% extends "base.html" %}
 
-{% block title %}设置 - 余音{% endblock %}
+{% block title %}余音 - 设置{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">设置</h1>
-    <p class="page-subtitle">配置应用选项</p>
+    <p class="page-subtitle">自定义你的学习偏好</p>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
-    <!-- 主题设置 -->
+<div class="settings-layout">
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">主题设置</h2>
+            <h2 class="card-title">默认设置</h2>
         </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-            <div class="card" style="cursor: pointer; border: 2px solid var(--color-primary);" onclick="selectTheme('shui_mo')">
-                <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-sm);">
-                    <div style="width: 24px; height: 24px; background: #F5F0E8; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"></div>
-                    <div style="width: 24px; height: 24px; background: #8B2500; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #2B5B84; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #9B7653; border-radius: var(--radius-sm);"></div>
-                </div>
-                <p style="font-weight: 600; font-size: 14px;">水墨素雅</p>
-                <p style="font-size: 11px; color: var(--text-secondary);">默认主题</p>
-            </div>
-
-            <div class="card" style="cursor: pointer;" onclick="selectTheme('shui_mo_dark')">
-                <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-sm);">
-                    <div style="width: 24px; height: 24px; background: #1A1A1A; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #C5A55A; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #8B2500; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #8B7355; border-radius: var(--radius-sm);"></div>
-                </div>
-                <p style="font-weight: 600; font-size: 14px;">水墨深色</p>
-                <p style="font-size: 11px; color: var(--text-secondary);">深色主题</p>
-            </div>
-
-            <div class="card" style="cursor: pointer;" onclick="selectTheme('zhu_sha')">
-                <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-sm);">
-                    <div style="width: 24px; height: 24px; background: #1A1410; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #D4380D; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #C5A55A; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #8B7355; border-radius: var(--radius-sm);"></div>
-                </div>
-                <p style="font-weight: 600; font-size: 14px;">朱砂浓墨</p>
-                <p style="font-size: 11px; color: var(--text-secondary);">深色主题</p>
-            </div>
-
-            <div class="card" style="cursor: pointer;" onclick="selectTheme('qing_ci')">
-                <div style="display: flex; gap: var(--space-xs); margin-bottom: var(--space-sm);">
-                    <div style="width: 24px; height: 24px; background: #F0F4F3; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #3A7D6E; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #8B6B5A; border-radius: var(--radius-sm);"></div>
-                    <div style="width: 24px; height: 24px; background: #6B8E7E; border-radius: var(--radius-sm);"></div>
-                </div>
-                <p style="font-weight: 600; font-size: 14px;">青瓷素雅</p>
-                <p style="font-size: 11px; color: var(--text-secondary);">清新主题</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 音频设置 -->
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">音频设置</h2>
-        </div>
-
-        <div style="display: grid; gap: var(--space-md);">
-            <div>
-                <label style="display: block; margin-bottom: var(--space-xs); color: var(--text-secondary); font-size: 12px;">输出设备</label>
-                <select class="select">
-                    <option>系统默认</option>
-                    <option>扬声器</option>
-                    <option>耳机</option>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">默认调性</label>
+                <select id="default-key" class="select">
+                    <option value="D">D调</option>
+                    <option value="G">G调</option>
+                    <option value="C">C调</option>
+                    <option value="F">F调</option>
+                    <option value="E">E调</option>
                 </select>
             </div>
-            <div>
-                <label style="display: block; margin-bottom: var(--space-xs); color: var(--text-secondary); font-size: 12px;">均衡器</label>
-                <select class="select">
-                    <option>关闭</option>
-                    <option>流行</option>
-                    <option>古典</option>
-                    <option>爵士</option>
-                    <option>摇滚</option>
+            <div class="form-group">
+                <label class="form-label">默认指法类型</label>
+                <select id="default-fingering" class="select">
+                    <option value="5">筒音作5</option>
+                    <option value="1">筒音作1</option>
+                    <option value="2">筒音作2</option>
                 </select>
             </div>
         </div>
     </div>
-</div>
 
-<!-- 关于 -->
-<div class="card" style="margin-top: var(--space-lg);">
-    <div class="card-header">
-        <h2 class="card-title">关于</h2>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">练习统计</h2>
+        </div>
+        <div id="practice-stats" class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="stat-duration">0</div>
+                <div class="stat-label">练习时长（分钟）</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-count">0</div>
+                <div class="stat-label">练习次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-accuracy">0%</div>
+                <div class="stat-label">平均准确率</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="stat-notes">0</div>
+                <div class="stat-label">总音符数</div>
+            </div>
+        </div>
     </div>
-    <div style="color: var(--text-secondary); line-height: 1.8;">
-        <p><strong>余音 v2.0</strong></p>
-        <p>竹笛学习助手</p>
-        <p style="margin-top: var(--space-sm);">专业的竹笛简谱学习工具，支持多调性、多指法类型，具备音频识别、乐谱管理、PDF导出等功能。</p>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">关于</h2>
+        </div>
+        <div class="about-info">
+            <p><strong>余音 v0.2</strong></p>
+            <p>竹笛学习助手 - 专业的音乐播放与学习工具</p>
+            <p class="text-secondary">基于 FastAPI + Jinja2 构建</p>
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function selectTheme(themeName) {
-    console.log('Selected theme:', themeName);
-    // TODO: 实现主题切换逻辑
-}
+document.addEventListener('DOMContentLoaded', () => {
+    // 加载设置
+    const savedKey = localStorage.getItem('yuyin_default_key') || 'D';
+    const savedFingering = localStorage.getItem('yuyin_default_fingering') || '5';
+    document.getElementById('default-key').value = savedKey;
+    document.getElementById('default-fingering').value = savedFingering;
+
+    // 保存设置
+    document.getElementById('default-key').addEventListener('change', (e) => {
+        localStorage.setItem('yuyin_default_key', e.target.value);
+    });
+    document.getElementById('default-fingering').addEventListener('change', (e) => {
+        localStorage.setItem('yuyin_default_fingering', e.target.value);
+    });
+
+    // 加载练习统计
+    async function loadStats() {
+        try {
+            const resp = await fetch('/api/practice/stats');
+            const data = await resp.json();
+            document.getElementById('stat-duration').textContent = data.total_duration || 0;
+            document.getElementById('stat-count').textContent = data.total_count || 0;
+            document.getElementById('stat-accuracy').textContent = (data.average_accuracy || 0) + '%';
+            document.getElementById('stat-notes').textContent = data.total_notes || 0;
+        } catch (e) {
+            console.error('加载练习统计失败:', e);
+        }
+    }
+
+    loadStats();
+});
 </script>
 {% endblock %}

@@ -445,7 +445,7 @@ class SplashWindow(QWidget):
         painter.setPen(QColor(139, 37, 0, int(100 * opacity)))
         font = QFont("KaiTi", 10)
         painter.setFont(font)
-        painter.drawText(QRectF(510, 315, 80, 25), Qt.AlignmentFlag.AlignCenter, "甲辰年制")
+        painter.drawText(QRectF(510, 315, 80, 25), Qt.AlignmentFlag.AlignCenter, "丙午年制")
 
     def _draw_seal(self, painter, x, y, opacity):
         size = 42

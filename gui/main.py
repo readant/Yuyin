@@ -4,7 +4,9 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# 将项目根目录加入路径
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT_DIR)
 
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QFont

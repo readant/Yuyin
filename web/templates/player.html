@@ -1,57 +1,183 @@
 {% extends "base.html" %}
 
-{% block title %}播放器 - 余音{% endblock %}
+{% block title %}余音 - 播放器{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1 class="page-title">播放器</h1>
-</div>
-
-<div class="card" style="padding: var(--space-2xl);">
+<div class="player-layout">
     <!-- 曲目信息 -->
-    <div class="player-info" style="text-align: center; margin-bottom: var(--space-xl);">
-        <h2 class="track-title" id="track-title">未播放</h2>
-        <p class="track-artist" id="track-artist">选择一首歌曲开始播放</p>
+    <div class="player-info">
+        <h2 id="track-title" class="player-title">未选择曲目</h2>
+        <p id="track-artist" class="player-artist">请从曲库选择一首歌曲</p>
     </div>
 
-    <!-- 唱片/可视化 -->
-    <div style="display: flex; justify-content: center; margin-bottom: var(--space-xl);">
-        <div id="album-art" style="width: 250px; height: 250px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-secondary), var(--border-light)); box-shadow: var(--shadow-lg);">
-            <span style="font-size: 48px; color: var(--color-primary); opacity: 0.3;">~</span>
+    <!-- 唱片可视化 -->
+    <div class="player-vinyl">
+        <div class="vinyl-disc" id="vinyl-disc">
+            <div class="vinyl-inner">
+                <span class="vinyl-note">~</span>
+            </div>
         </div>
     </div>
 
     <!-- 进度条 -->
-    <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-lg); max-width: 600px; margin-left: auto; margin-right: auto;">
-        <span style="font-family: Consolas; font-size: 12px; color: var(--text-secondary); min-width: 45px;" id="time-current">00:00</span>
-        <input type="range" class="progress-slider" id="progress-slider" min="0" max="100" value="0" style="flex: 1;">
-        <span style="font-family: Consolas; font-size: 12px; color: var(--text-secondary); min-width: 45px; text-align: right;" id="time-total">00:00</span>
+    <div class="player-progress">
+        <span id="current-time" class="time">0:00</span>
+        <input type="range" id="progress-slider" class="progress-slider" min="0" max="100" value="0" step="0.1">
+        <span id="total-time" class="time">0:00</span>
     </div>
 
     <!-- 控制按钮 -->
-    <div style="display: flex; justify-content: center; align-items: center; gap: var(--space-lg); margin-bottom: var(--space-lg);">
-        <button class="control-btn" id="prev-btn" title="快退10秒" style="width: 50px; height: 50px; font-size: 16px;"><<</button>
-        <button class="control-btn play-btn" id="play-btn" title="播放/暂停" style="width: 70px; height: 70px; font-size: 24px;">></button>
-        <button class="control-btn" id="next-btn" title="快进10秒" style="width: 50px; height: 50px; font-size: 16px;">>></button>
+    <div class="player-controls">
+        <button id="btn-prev" class="control-btn" title="上一首">|&lt;</button>
+        <button id="btn-play" class="play-btn" title="播放/暂停">&gt;</button>
+        <button id="btn-next" class="control-btn" title="下一首">&gt;|</button>
     </div>
 
-    <!-- 音量控制 -->
-    <div style="display: flex; justify-content: center; align-items: center; gap: var(--space-md);">
-        <span style="color: var(--text-secondary);">音量</span>
-        <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="80" style="width: 150px;">
+    <!-- 音量 -->
+    <div class="player-volume">
+        <span class="volume-label">音量</span>
+        <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="80">
     </div>
-</div>
 
-<!-- 从曲库播放的按钮 -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">快速播放</h2>
+    <!-- 简谱显示 -->
+    <div class="score-display" id="score-display" style="display: none;">
+        <div class="score-header">
+            <span class="score-label">简谱</span>
+            <a href="/editor" class="btn btn-sm">编辑简谱</a>
+        </div>
+        <div id="score-notes" class="score-notes"></div>
     </div>
-    <p style="color: var(--text-secondary); margin-bottom: var(--space-md);">
-        前往曲库选择歌曲，或直接输入歌曲ID播放
-    </p>
-    <div style="display: flex; gap: var(--space-md);">
-        <a href="/library" class="btn btn-primary">浏览曲库</a>
+
+    <!-- 指法显示 -->
+    <div class="fingering-display" id="fingering-display" style="display: none;">
+        <div class="fingering-label">当前指法</div>
+        <div id="fingering-holes" class="fingering-holes"></div>
+        <div id="fingering-note" class="fingering-note-name"></div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const audio = document.getElementById('audio-player');
+    const titleEl = document.getElementById('track-title');
+    const artistEl = document.getElementById('track-artist');
+    const playBtn = document.getElementById('btn-play');
+    const prevBtn = document.getElementById('btn-prev');
+    const nextBtn = document.getElementById('btn-next');
+    const progressSlider = document.getElementById('progress-slider');
+    const volumeSlider = document.getElementById('volume-slider');
+    const currentTimeEl = document.getElementById('current-time');
+    const totalTimeEl = document.getElementById('total-time');
+    const vinylDisc = document.getElementById('vinyl-disc');
+    const scoreDisplay = document.getElementById('score-display');
+    const scoreNotes = document.getElementById('score-notes');
+    const fingeringDisplay = document.getElementById('fingering-display');
+    const fingeringHoles = document.getElementById('fingering-holes');
+    const fingeringNote = document.getElementById('fingering-note');
+
+    let currentTrack = null;
+    let trackList = [];
+    let currentIndex = -1;
+
+    // 从URL获取track参数
+    const params = new URLSearchParams(window.location.search);
+    const trackId = params.get('track');
+
+    // 加载曲目列表
+    async function loadTracks() {
+        const resp = await fetch('/api/tracks');
+        const data = await resp.json();
+        trackList = data.tracks || [];
+        if (trackId) {
+            currentIndex = trackList.findIndex(t => t.id == trackId);
+            if (currentIndex >= 0) loadTrack(trackList[currentIndex]);
+        }
+    }
+
+    // 加载并播放曲目
+    async function loadTrack(track) {
+        currentTrack = track;
+        titleEl.textContent = track.title;
+        artistEl.textContent = track.artist || '未知艺术家';
+
+        audio.src = '/api/serve-audio/' + track.id;
+        audio.load();
+        audio.play();
+        playBtn.textContent = '||';
+        vinylDisc.classList.add('playing');
+    }
+
+    // 播放/暂停
+    playBtn.addEventListener('click', () => {
+        if (!audio.src) return;
+        if (audio.paused) {
+            audio.play();
+            playBtn.textContent = '||';
+            vinylDisc.classList.add('playing');
+        } else {
+            audio.pause();
+            playBtn.textContent = '>';
+            vinylDisc.classList.remove('playing');
+        }
+    });
+
+    // 上一首/下一首
+    prevBtn.addEventListener('click', () => {
+        if (trackList.length === 0) return;
+        currentIndex = (currentIndex - 1 + trackList.length) % trackList.length;
+        loadTrack(trackList[currentIndex]);
+    });
+
+    nextBtn.addEventListener('click', () => {
+        if (trackList.length === 0) return;
+        currentIndex = (currentIndex + 1) % trackList.length;
+        loadTrack(trackList[currentIndex]);
+    });
+
+    // 进度更新
+    audio.addEventListener('timeupdate', () => {
+        if (!audio.duration) return;
+        const pct = (audio.currentTime / audio.duration) * 100;
+        progressSlider.value = pct;
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+        totalTimeEl.textContent = formatTime(audio.duration);
+    });
+
+    // 进度拖动
+    progressSlider.addEventListener('input', (e) => {
+        if (!audio.duration) return;
+        audio.currentTime = (e.target.value / 100) * audio.duration;
+    });
+
+    // 音量
+    volumeSlider.addEventListener('input', (e) => {
+        audio.volume = e.target.value / 100;
+    });
+    audio.volume = 0.8;
+
+    // 播放结束
+    audio.addEventListener('ended', () => {
+        playBtn.textContent = '>';
+        vinylDisc.classList.remove('playing');
+        // 自动下一首
+        if (trackList.length > 0) {
+            currentIndex = (currentIndex + 1) % trackList.length;
+            loadTrack(trackList[currentIndex]);
+        }
+    });
+
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    loadTracks();
+});
+</script>
 {% endblock %}

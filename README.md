@@ -1,21 +1,19 @@
-# 余音 v0.1.0
+# 余音 v0.2.0
 
-专业的音乐播放器，兼具竹笛学习功能。中国风设计，支持多主题切换。
+竹笛学习助手 - 专业的音乐播放与学习 Web 应用。
 
 ---
 
 ## 项目简介
 
-余音是一款基于 PyQt6 开发的桌面音乐播放器，专为竹笛爱好者设计。它不仅具备完整的音乐播放功能，还集成了竹笛指法学习、简谱编辑等特色功能。采用中国风设计语言，提供三套精美主题，让音乐体验与视觉美感完美融合。
+余音是一款专为竹笛爱好者设计的 Web 音乐播放器。基于 FastAPI + Jinja2 构建，支持音乐播放、指法查询、歌词同步等功能。采用中国风设计语言，提供优雅的用户体验。
 
 ### 核心亮点
 
 - 全格式支持：MP3、WAV、FLAC、OGG、M4A
-- 中国风主题：水墨素雅、朱砂浓墨、青瓷素雅
 - 智能指法：实时显示当前音符的竹笛指法
 - 歌词同步：支持 LRC 格式歌词，自动滚动
-- 频谱可视化：水墨风格频谱动画
-- 黑胶唱片：旋转动画效果，复古质感
+- 中国风 UI：水墨风格界面设计
 
 ---
 
@@ -71,105 +69,62 @@
 ```
 Yuyin/
 |
-|-- main.py                          # 应用程序入口
-|-- requirements.txt                 # Python 依赖列表
+|-- launcher.py                      # Web 端启动器（主入口）
+|-- requirements.txt                 # Web 端依赖
 |-- README.md                        # 项目说明文档
 |-- .gitignore                       # Git 忽略规则
 |
-|-- src/                             # 源代码目录
+|-- web/                             # Web 前端
+|   |-- app.py                       # FastAPI 路由 + API
+|   |-- gunicorn_config.py           # 生产部署配置
+|   |-- static/css/                  # 样式表
+|   |-- static/js/                   # JavaScript
+|   +-- templates/                   # Jinja2 模板
+|
+|-- src/                             # 核心业务逻辑
 |   |
 |   |-- config/                      # 配置管理模块
-|   |   |-- __init__.py
 |   |   +-- settings.py              # 统一配置（支持环境变量）
 |   |
-|   |-- domain/                      # 领域层（核心业务）
-|   |   |-- __init__.py
+|   |-- domain/                      # 领域层
 |   |   |-- models/                  # 领域模型
-|   |   |   |-- __init__.py
 |   |   |   |-- notes.py             # 音符、调性、指法数据
 |   |   |   +-- database.py          # SQLAlchemy ORM 模型
 |   |   +-- repositories/            # 数据访问层
-|   |       |-- __init__.py
-|   |       |-- base.py              # 仓储基类（泛型）
+|   |       |-- base.py              # 仓储基类
 |   |       +-- score_repository.py  # 乐谱仓储
 |   |
 |   |-- application/                 # 应用层（业务逻辑）
-|   |   |-- __init__.py
 |   |   |-- services/                # 业务服务
-|   |   |   |-- __init__.py
-|   |   |   |-- music_service.py     # 音乐库管理服务
-|   |   |   |-- lyrics_service.py    # 歌词解析服务
-|   |   |   +-- score_service.py     # 乐谱业务服务
+|   |   |   |-- music_service.py     # 音乐库管理
+|   |   |   |-- lyrics_service.py    # 歌词解析
+|   |   |   +-- score_service.py     # 乐谱业务
 |   |   +-- strategies/              # 策略模式
-|   |       |-- __init__.py
-|   |       |-- base.py              # 分析策略抽象基类
-|   |       |-- librosa_strategy.py  # Librosa 高精度分析
-|   |       |-- simple_strategy.py   # FFT 轻量级分析
+|   |       |-- base.py              # 分析策略基类
+|   |       |-- librosa_strategy.py  # Librosa 分析
+|   |       |-- simple_strategy.py   # FFT 分析
 |   |       +-- context.py           # 策略上下文
 |   |
 |   |-- infrastructure/              # 基础设施层
-|   |   |-- __init__.py
 |   |   |-- audio/                   # 音频处理
-|   |   |   |-- __init__.py
-|   |   |   |-- analyzer.py          # 音频分析器
-|   |   |   |-- player.py            # 音频播放器
-|   |   |   +-- realtime_analyzer.py # 实时分析器
 |   |   +-- database/                # 数据库
-|   |       +-- __init__.py
 |   |
 |   |-- shared/                      # 共享层
-|   |   |-- __init__.py
 |   |   |-- exceptions/              # 异常处理
-|   |   |   |-- __init__.py
-|   |   |   |-- base.py              # 基础异常类
-|   |   |   |-- audio.py             # 音频异常
-|   |   |   +-- database.py          # 数据库异常
 |   |   |-- logging/                 # 日志系统
-|   |   |   |-- __init__.py
-|   |   |   +-- logger.py            # 日志配置
+|   |   |-- i18n/                    # 国际化
 |   |   +-- utils/                   # 工具函数
-|   |       |-- __init__.py
-|   |       +-- pdf_exporter.py      # PDF 导出
 |   |
-|   +-- ui/                          # 界面层
-|       |-- __init__.py
-|       |-- main_window.py           # 主窗口
-|       |-- splash.py                # 启动动画（水墨效果）
-|       |
-|       |-- components/              # 可复用组件
-|       |   |-- __init__.py
-|       |   |-- vinyl.py             # 黑胶唱片组件
-|       |   |-- spectrum.py          # 频谱可视化组件
-|       |   |-- progress.py          # 进度条组件
-|       |   |-- lyrics.py            # 歌词显示组件
-|       |   +-- fingering.py         # 指法图示组件
-|       |
-|       |-- panels/                  # 功能面板
-|       |   |-- __init__.py
-|       |   |-- player_panel.py      # 播放器面板
-|       |   |-- library_panel.py     # 音乐库面板
-|       |   |-- fingering_panel.py   # 指法查询面板
-|       |   +-- settings_panel.py    # 设置面板
-|       |
-|       |-- navigation/              # 导航组件
-|       |   |-- __init__.py
-|       |   +-- nav_button.py        # 导航按钮
-|       |
-|       +-- theme/                   # 主题系统
-|           |-- __init__.py
-|           |-- manager.py           # 主题管理器（单例）
-|           +-- palettes.py          # 配色方案定义
+|   +-- ui/                          # UI 组件
+|       +-- splash.py                # 水墨启动动画（Web启动器复用）
+|
+|-- gui/                             # GUI 桌面端（暂停开发）
+|   |-- main.py                      # 桌面端入口
+|   +-- launcher/                    # 桌面端启动器
 |
 |-- tests/                           # 测试目录
-|   |-- __init__.py
-|   |-- unit/                        # 单元测试
-|   |   |-- __init__.py
-|   |   +-- test_strategies.py       # 策略模式测试
-|   +-- integration/                 # 集成测试
-|       +-- __init__.py
-|
-+-- data/                            # 数据目录（运行时创建）
-    +-- yuyin.db                     # SQLite 数据库
+|-- data/                            # 数据目录（运行时创建）
++-- docs/                            # 文档
 ```
 
 ---
@@ -208,11 +163,9 @@ UI --> Application --> Domain <-- Infrastructure
 
 | 模式 | 应用位置 | 说明 |
 |------|----------|------|
-| 单例 | ThemeManager, Settings | 全局唯一实例 |
+| 单例 | Settings, MusicLibrary | 全局唯一实例 |
 | 策略 | AnalysisStrategy | 音频分析算法可切换 |
-| 观察者 | PyQt Signal/Slot | 组件通信 |
 | 仓储 | BaseRepository | 数据访问抽象 |
-| 工厂 | PanelFactory | 面板创建 |
 
 ---
 
@@ -221,11 +174,12 @@ UI --> Application --> Domain <-- Infrastructure
 | 类别 | 技术 | 版本 |
 |------|------|------|
 | 语言 | Python | 3.11+ |
-| GUI | PyQt6 | 6.5+ |
+| Web 框架 | FastAPI | 0.104+ |
+| ASGI 服务器 | uvicorn | 0.24+ |
+| 模板引擎 | Jinja2 | 3.0+ |
 | 数据库 | SQLAlchemy | 2.0+ |
 | 音频分析 | librosa | 0.10+ |
-| 音频播放 | sounddevice | 0.4+ |
-| PDF导出 | reportlab | 4.0+ |
+| 启动动画 | PyQt6 | 6.5+（可选） |
 
 ---
 
@@ -255,8 +209,10 @@ source venv/bin/activate
 # 4. 安装依赖
 pip install -r requirements.txt
 
-# 5. 运行应用
-python main.py
+# 5. 启动 Web 服务
+python launcher.py
+
+# 6. 浏览器自动打开 http://localhost:5000
 ```
 
 ### 环境变量配置

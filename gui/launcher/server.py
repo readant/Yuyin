@@ -13,7 +13,7 @@ class WebServer:
     def start(self):
         """在后台启动Web服务"""
         # 将web目录加入路径
-        web_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
+        web_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'web')
         sys.path.insert(0, web_dir)
 
         import uvicorn

@@ -1,106 +1,154 @@
 {% extends "base.html" %}
 
-{% block title %}余音 - 竹笛学习助手{% endblock %}
+{% block title %}余音 - 曲库{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">欢迎使用余音</h1>
-    <p class="page-subtitle">竹笛学习助手 - 专业的音乐播放与学习工具</p>
+    <h1 class="page-title">曲库</h1>
+    <p class="page-subtitle">管理你的音乐收藏</p>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-lg);">
-    <!-- 左侧：快速操作 -->
-    <div>
-        <div class="card fade-in">
-            <div class="card-header">
-                <h2 class="card-title">快速开始</h2>
-            </div>
-            <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">
-                余音是一款专为竹笛爱好者设计的音乐播放器，集成了竹笛学习功能。
-            </p>
-
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md);">
-                <div class="card" style="text-align: center; padding: var(--space-lg);">
-                    <div style="font-size: 28px; color: var(--color-primary); margin-bottom: var(--space-sm);">1</div>
-                    <h4 style="margin-bottom: var(--space-xs);">导入音乐</h4>
-                    <p style="color: var(--text-secondary); font-size: 12px;">添加本地音乐文件</p>
-                </div>
-                <div class="card" style="text-align: center; padding: var(--space-lg);">
-                    <div style="font-size: 28px; color: var(--color-primary); margin-bottom: var(--space-sm);">2</div>
-                    <h4 style="margin-bottom: var(--space-xs);">选择曲目</h4>
-                    <p style="color: var(--text-secondary); font-size: 12px;">浏览曲库选择音乐</p>
-                </div>
-                <div class="card" style="text-align: center; padding: var(--space-lg);">
-                    <div style="font-size: 28px; color: var(--color-primary); margin-bottom: var(--space-sm);">3</div>
-                    <h4 style="margin-bottom: var(--space-xs);">开始学习</h4>
-                    <p style="color: var(--text-secondary); font-size: 12px;">跟随指法练习演奏</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="card fade-in" style="animation-delay: 0.1s;">
-            <div class="card-header">
-                <h2 class="card-title">功能特色</h2>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-                <div style="display: flex; gap: var(--space-sm); align-items: flex-start;">
-                    <span style="color: var(--color-primary); font-size: 18px;">~</span>
-                    <div>
-                        <h4>音乐播放</h4>
-                        <p style="color: var(--text-secondary); font-size: 13px;">支持多种音频格式，高品质播放</p>
-                    </div>
-                </div>
-                <div style="display: flex; gap: var(--space-sm); align-items: flex-start;">
-                    <span style="color: var(--color-primary); font-size: 18px;">*</span>
-                    <div>
-                        <h4>指法查询</h4>
-                        <p style="color: var(--text-secondary); font-size: 13px;">实时显示竹笛指法图示</p>
-                    </div>
-                </div>
-                <div style="display: flex; gap: var(--space-sm); align-items: flex-start;">
-                    <span style="color: var(--color-primary); font-size: 18px;">=</span>
-                    <div>
-                        <h4>简谱编辑</h4>
-                        <p style="color: var(--text-secondary); font-size: 13px;">创建和编辑简谱</p>
-                    </div>
-                </div>
-                <div style="display: flex; gap: var(--space-sm); align-items: flex-start;">
-                    <span style="color: var(--color-primary); font-size: 18px;">#</span>
-                    <div>
-                        <h4>节奏训练</h4>
-                        <p style="color: var(--text-secondary); font-size: 13px;">节拍器和节奏练习</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="toolbar">
+    <div class="toolbar-left">
+        <input type="text" id="search-input" class="input" placeholder="搜索曲目..." style="width: 260px;">
     </div>
-
-    <!-- 右侧：最近播放 -->
-    <div>
-        <div class="card fade-in" style="animation-delay: 0.2s;">
-            <div class="card-header">
-                <h2 class="card-title">最近播放</h2>
-            </div>
-            <div id="recent-tracks" style="color: var(--text-secondary);">
-                <p>暂无播放记录</p>
-            </div>
-        </div>
-
-        <div class="card fade-in" style="animation-delay: 0.3s;">
-            <div class="card-header">
-                <h2 class="card-title">练习统计</h2>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-                <div style="text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">0</div>
-                    <div style="color: var(--text-secondary); font-size: 12px;">练习时长(分钟)</div>
-                </div>
-                <div style="text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: var(--color-primary);">0</div>
-                    <div style="color: var(--text-secondary); font-size: 12px;">练习次数</div>
-                </div>
-            </div>
-        </div>
+    <div class="toolbar-right">
+        <button id="scan-btn" class="btn btn-primary">扫描文件夹</button>
     </div>
 </div>
+
+<div id="scan-status" class="scan-status" style="display: none;"></div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th style="width: 50px;">#</th>
+            <th>曲目</th>
+            <th>艺术家</th>
+            <th style="width: 80px;">时长</th>
+            <th style="width: 80px;">操作</th>
+        </tr>
+    </thead>
+    <tbody id="track-list">
+        <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                暂无曲目，请先扫描文件夹
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div id="track-count" class="track-count">共 0 首歌曲</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const scanBtn = document.getElementById('scan-btn');
+    const trackList = document.getElementById('track-list');
+    const trackCount = document.getElementById('track-count');
+    const scanStatus = document.getElementById('scan-status');
+
+    let allTracks = [];
+
+    // 加载曲目列表
+    async function loadTracks() {
+        try {
+            const resp = await fetch('/api/tracks');
+            const data = await resp.json();
+            allTracks = data.tracks || [];
+            renderTracks(allTracks);
+        } catch (e) {
+            console.error('加载曲目失败:', e);
+        }
+    }
+
+    // 渲染曲目列表
+    function renderTracks(tracks) {
+        if (tracks.length === 0) {
+            trackList.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                        暂无曲目，请先扫描文件夹
+                    </td>
+                </tr>`;
+            trackCount.textContent = '共 0 首歌曲';
+            return;
+        }
+
+        trackList.innerHTML = tracks.map((t, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td>${t.title}</td>
+                <td>${t.artist || '未知'}</td>
+                <td>${formatDuration(t.duration)}</td>
+                <td>
+                    <button class="btn btn-sm" onclick="playTrack(${t.id})">播放</button>
+                </td>
+            </tr>
+        `).join('');
+        trackCount.textContent = `共 ${tracks.length} 首歌曲`;
+    }
+
+    // 搜索过滤
+    searchInput.addEventListener('input', (e) => {
+        const kw = e.target.value.toLowerCase();
+        if (!kw) {
+            renderTracks(allTracks);
+            return;
+        }
+        const filtered = allTracks.filter(t =>
+            t.title.toLowerCase().includes(kw) ||
+            (t.artist && t.artist.toLowerCase().includes(kw))
+        );
+        renderTracks(filtered);
+    });
+
+    // 扫描文件夹
+    scanBtn.addEventListener('click', async () => {
+        const path = prompt('请输入音乐文件夹路径：');
+        if (!path) return;
+
+        scanStatus.style.display = 'block';
+        scanStatus.textContent = '扫描中...';
+        scanStatus.className = 'scan-status';
+
+        try {
+            const resp = await fetch('/api/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({path})
+            });
+            const data = await resp.json();
+            if (data.success) {
+                scanStatus.textContent = `扫描完成，找到 ${data.count} 首曲目`;
+                scanStatus.className = 'scan-status success';
+                loadTracks();
+            } else {
+                scanStatus.textContent = '扫描失败：' + (data.error || '未知错误');
+                scanStatus.className = 'scan-status error';
+            }
+        } catch (e) {
+            scanStatus.textContent = '扫描出错：' + e.message;
+            scanStatus.className = 'scan-status error';
+        }
+    });
+
+    // 播放曲目
+    window.playTrack = function(trackId) {
+        window.location.href = '/player?track=' + trackId;
+    };
+
+    // 格式化时长
+    function formatDuration(seconds) {
+        if (!seconds) return '0:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    loadTracks();
+});
+</script>
 {% endblock %}

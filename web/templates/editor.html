@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block title %}余音 - 简谱编辑器{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">简谱编辑器</h1>
+    <p class="page-subtitle">创建和编辑竹笛简谱</p>
+</div>
+
+<div class="editor-layout">
+    <!-- 左侧：洞洞谱预览 -->
+    <div class="editor-main">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">简谱预览</h2>
+                <span class="card-hint">点击音符编辑，Shift+点击多选</span>
+            </div>
+            <div id="preview-area" class="dongdong-preview">
+                <div class="page-header-preview">
+                    <h1 id="preview-title">未命名乐谱</h1>
+                    <p id="preview-subtitle">1=D 4/4</p>
+                </div>
+                <div id="preview-grid" class="preview-grid"></div>
+                <div class="page-footer-preview">— 第 1 页 —</div>
+            </div>
+        </div>
+
+        <!-- 文本输入区（兼容模式） -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">文本输入</h2>
+                <span class="card-hint">空格分隔音符，| 小节线，- 延续</span>
+            </div>
+            <textarea id="score-input" class="input score-textarea" rows="3"
+                placeholder="示例：1 2 3 4 | 5 - 6 7 | 1 - - - |"></textarea>
+            <div style="margin-top: 8px;">
+                <button id="btn-import-text" class="btn btn-sm btn-secondary">导入到洞洞谱</button>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="editor-actions">
+            <button id="btn-save" class="btn btn-primary">保存简谱</button>
+            <button id="btn-export" class="btn btn-secondary">导出 JSON</button>
+            <label class="btn btn-secondary" style="cursor:pointer;">
+                导入 JSON
+                <input type="file" id="file-input" accept=".json" style="display:none;">
+            </label>
+            <button id="btn-export-pdf" class="btn btn-secondary">导出 PDF</button>
+            <button id="btn-clear" class="btn btn-danger">清空</button>
+        </div>
+    </div>
+
+    <!-- 右侧：编辑面板 -->
+    <div class="editor-sidebar">
+        <!-- 曲目信息 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">曲目信息</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">标题</label>
+                    <input type="text" id="score-title" class="input" placeholder="曲目名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">艺术家</label>
+                    <input type="text" id="score-artist" class="input" placeholder="艺术家">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">调性</label>
+                    <select id="score-key" class="select">
+                        <option value="D">D调</option>
+                        <option value="G">G调</option>
+                        <option value="C">C调</option>
+                        <option value="F">F调</option>
+                        <option value="E">E调</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">拍号</label>
+                    <select id="score-time" class="select">
+                        <option value="4/4">4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="2/4">2/4</option>
+                        <option value="6/8">6/8</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">BPM</label>
+                    <input type="number" id="score-bpm" class="input" value="80" min="40" max="240">
+                </div>
+            </div>
+        </div>
+
+        <!-- 模式切换 -->
+        <div class="card">
+            <div class="mode-toggle">
+                <input type="checkbox" id="insert-toggle">
+                <label for="insert-toggle">插入模式（开启后在选中位置前插入）</label>
+            </div>
+        </div>
+
+        <!-- 节奏编辑 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">节奏编辑</h2>
+            </div>
+            <div class="btn-grid">
+                <button class="key-btn" onclick="modifyRhythm('line', 1)">减时线 +</button>
+                <button class="key-btn" onclick="modifyRhythm('line', -1)">减时线 −</button>
+                <button class="key-btn" onclick="modifyRhythm('dot', 1)">附点</button>
+            </div>
+        </div>
+
+        <!-- 编辑操作 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">编辑</h2>
+            </div>
+            <div class="btn-grid">
+                <button class="key-btn" onclick="copySelected()">复制</button>
+                <button class="key-btn" onclick="pasteNotes()">粘贴</button>
+                <button class="key-btn" onclick="handleInput('-')">延时线</button>
+                <button class="key-btn" onclick="handleInput('BAR')">小节线</button>
+                <button class="key-btn" onclick="handleInput('SPACE')">间隔</button>
+                <button class="key-btn btn-danger" onclick="backspace()">删除</button>
+            </div>
+        </div>
+
+        <!-- 指法键盘 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">指法键盘</h2>
+            </div>
+            <div class="fingering-type-select" style="margin-bottom: 8px;">
+                <select id="fingering-type" class="select" onchange="renderKeyboard()">
+                    <option value="5">筒音作5</option>
+                    <option value="1">筒音作1</option>
+                </select>
+            </div>
+            <div class="keyboard-area">
+                <div id="row-low" class="keyboard-row"></div>
+                <div id="row-mid" class="keyboard-row"></div>
+                <div id="row-high" class="keyboard-row"></div>
+            </div>
+        </div>
+
+        <!-- 已保存简谱 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">我的简谱</h2>
+            </div>
+            <div id="saved-scores" class="saved-scores">
+                <p class="placeholder-text">暂无保存的简谱</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ==================== 指法映射 ====================
+const FIVE_MAP = {
+    '(5)':'bbbbbb', '(6)':'bbbbbw', '(7)':'bbbbww', '1':'bbbwww', '2':'bbwwww',
+    '3':'bwwwww', '4':'wbbwww', '5':'wbbbbb', '6':'bbbbbw', '7':'bbbbww',
+    '[1]':'bbbwww', '[2]':'bbwwww', '[3]':'bwwwww', '[4]':'hwwwww', '[5]':'wbbbbb'
+};
+const ONE_MAP = {
+    '1':'bbbbbb', '2':'bbbbbw', '3':'bbbbww', '4':'bbbwww',
+    '5':'bbwwww', '6':'bwwwww', '7':'wwwwww',
+    '[1]':'wbbbbb', '[2]':'bbbbbw', '[3]':'bbbbww', '[4]':'bbbwww', '[5]':'bbwwww'
+};
+
+// ==================== 状态 ====================
+let inputArr = [];
+let selectedIndices = [];
+let clipboard = [];
+
+// ==================== DOM ====================
+const titleInput = document.getElementById('score-title');
+const artistInput = document.getElementById('score-artist');
+const keySelect = document.getElementById('score-key');
+const timeSelect = document.getElementById('score-time');
+const bpmInput = document.getElementById('score-bpm');
+const scoreInput = document.getElementById('score-input');
+const previewTitle = document.getElementById('preview-title');
+const previewSubtitle = document.getElementById('preview-subtitle');
+const previewGrid = document.getElementById('preview-grid');
+const savedScores = document.getElementById('saved-scores');
+const fingeringTypeSelect = document.getElementById('fingering-type');
+
+// ==================== 指法键盘 ====================
+function renderKeyboard() {
+    const type = fingeringTypeSelect.value;
+    const layout = type === '5' ?
+        { low: ['(5)', '(6)', '(7)'], mid: ['1','2','3','4','5','6','7'], high: ['[1]','[2]','[3]','[4]','[5]'] } :
+        { low: [], mid: ['1','2','3','4','5','6','7'], high: ['[1]','[2]','[3]','[4]','[5]'] };
+
+    const draw = (id, notes, cls) => {
+        const el = document.getElementById(id);
+        el.innerHTML = '';
+        notes.forEach(n => {
+            const b = document.createElement('button');
+            b.className = 'key-btn ' + cls;
+            b.textContent = n;
+            b.onclick = (e) => { e.stopPropagation(); handleInput(n); };
+            el.appendChild(b);
+        });
+    };
+    draw('row-low', layout.low, 'btn-low');
+    draw('row-mid', layout.mid, 'btn-mid');
+    draw('row-high', layout.high, 'btn-high');
+}
+
+// ==================== 输入处理 ====================
+function handleInput(n) {
+    const isInsertMode = document.getElementById('insert-toggle').checked;
+    const newItem = { note: n, lyric: '', lines: 0, dot: false };
+
+    if (selectedIndices.length === 1) {
+        let idx = selectedIndices[0];
+        if (isInsertMode) {
+            inputArr.splice(idx, 0, newItem);
+            selectedIndices = [idx + 1];
+        } else {
+            inputArr[idx].note = n;
+            selectedIndices = [];
+        }
+    } else {
+        inputArr.push(newItem);
+    }
+    updatePreview();
+}
+
+// ==================== 节奏编辑 ====================
+function modifyRhythm(type, val) {
+    selectedIndices.forEach(idx => {
+        if (!inputArr[idx] || inputArr[idx].note === 'BAR' || inputArr[idx].note === 'SPACE') return;
+        if (type === 'line') inputArr[idx].lines = Math.max(0, Math.min(2, (inputArr[idx].lines || 0) + val));
+        if (type === 'dot') inputArr[idx].dot = !inputArr[idx].dot;
+    });
+    updatePreview();
+}
+
+// ==================== 选择 ====================
+function selectNote(index, event) {
+    event.stopPropagation();
+    if (event.shiftKey && selectedIndices.length > 0) {
+        const start = Math.min(selectedIndices[0], index);
+        const end = Math.max(selectedIndices[0], index);
+        selectedIndices = Array.from({length: end - start + 1}, (_, i) => start + i);
+    } else {
+        selectedIndices = [index];
+    }
+    updatePreview();
+}
+
+function deselectAll(e) {
+    if (e.target.id === 'preview-area' || e.target.classList.contains('preview-grid') ||
+        e.target.classList.contains('page-header-preview') || e.target.classList.contains('page-footer-preview')) {
+        selectedIndices = [];
+        updatePreview();
+    }
+}
+
+// ==================== 编辑操作 ====================
+function backspace() {
+    if (selectedIndices.length > 0) {
+        selectedIndices.sort((a,b) => b-a).forEach(idx => inputArr.splice(idx, 1));
+        selectedIndices = [];
+    } else if (inputArr.length > 0) {
+        inputArr.pop();
+    }
+    updatePreview();
+}
+
+function copySelected() {
+    if (selectedIndices.length > 0) {
+        clipboard = selectedIndices.sort((a,b) => a-b).map(idx => ({...inputArr[idx]}));
+    }
+}
+
+function pasteNotes() {
+    if (clipboard.length > 0) {
+        const targetIdx = selectedIndices.length > 0 ? Math.min(...selectedIndices) : inputArr.length;
+        inputArr.splice(targetIdx, 0, ...clipboard.map(item => ({...item})));
+        updatePreview();
+    }
+}
+
+// ==================== 文本导入 ====================
+document.getElementById('btn-import-text').addEventListener('click', () => {
+    const text = scoreInput.value.trim();
+    if (!text) return;
+    inputArr = text.split(/\s+/).map(token => {
+        if (token === '|') return { note: 'BAR', lyric: '', lines: 0, dot: false };
+        if (token === '-') return { note: '-', lyric: '', lines: 0, dot: false };
+        if (token === '') return null;
+        return { note: token, lyric: '', lines: 0, dot: false };
+    }).filter(Boolean);
+    selectedIndices = [];
+    updatePreview();
+});
+
+// ==================== 洞洞谱渲染 ====================
+function updatePreview() {
+    const type = fingeringTypeSelect.value;
+    const currentMap = type === '5' ? FIVE_MAP : ONE_MAP;
+
+    previewTitle.textContent = titleInput.value || '未命名乐谱';
+    previewSubtitle.textContent = `${keySelect.value}调 ${timeSelect.value}`;
+
+    previewGrid.innerHTML = '';
+
+    inputArr.forEach((item, index) => {
+        if (!item) return;
+        const isSelected = selectedIndices.includes(index);
+        const unit = document.createElement('div');
+        unit.className = 'note-unit' + (isSelected ? ' selected' : '');
+        unit.onclick = (e) => selectNote(index, e);
+
+        if (item.note === 'BAR') {
+            unit.innerHTML = '<div class="bar-line"></div>';
+        } else if (item.note === 'SPACE') {
+            unit.innerHTML = '<div class="space-unit"></div>';
+        } else {
+            let colorClass = 'is-mid';
+            let displayNum = item.note;
+            if (item.note.includes('(')) { colorClass = 'is-low'; displayNum = item.note.replace(/[()]/g,''); }
+            else if (item.note.includes('[')) { colorClass = 'is-high'; displayNum = item.note.replace(/[\[\]]/g,''); }
+
+            let fingerHtml = '';
+            if (item.note !== '-' && currentMap[item.note]) {
+                const fingerStr = currentMap[item.note];
+                for (let char of fingerStr) {
+                    if (char === 'b') fingerHtml += '<span class="note-dot">●</span>';
+                    else if (char === 'w') fingerHtml += '<span class="note-dot-empty">○</span>';
+                    else if (char === 'h') fingerHtml += '<span class="note-dot-half">◐</span>';
+                }
+            }
+
+            unit.classList.add(colorClass);
+            unit.innerHTML = `
+                <div class="note-num-area">
+                    <span class="note-num">${displayNum}${item.dot ? '<span class="dot-after">.</span>' : ''}
+                        ${item.lines >= 1 ? '<div class="underline-1"></div>' : ''}
+                        ${item.lines >= 2 ? '<div class="underline-2"></div>' : ''}
+                    </span>
+                </div>
+                <input type="text" class="lyric-input" value="${item.lyric || ''}" placeholder="-"
+                    onclick="event.stopPropagation()" oninput="inputArr[${index}].lyric=this.value">
+                <div class="fingering-body"><div class="fingering-img">${fingerHtml}</div></div>
+            `;
+        }
+
+        previewGrid.appendChild(unit);
+    });
+
+    if (inputArr.length === 0) {
+        previewGrid.innerHTML = '<p class="placeholder-text" style="padding:40px;">使用键盘或文本输入音符</p>';
+    }
+}
+
+// ==================== 保存 ====================
+document.getElementById('btn-save').addEventListener('click', async () => {
+    const title = titleInput.value.trim();
+    if (!title) { alert('请输入曲目标题'); return; }
+
+    const data = {
+        title: title,
+        artist: artistInput.value.trim() || null,
+        key: keySelect.value,
+        time_signature: timeSelect.value,
+        tempo: parseInt(bpmInput.value) || 80,
+        notes_data: JSON.stringify(inputArr),
+    };
+
+    try {
+        const resp = await fetch('/api/score', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        if (result.success) {
+            alert('保存成功');
+            loadSavedScores();
+        } else {
+            alert('保存失败: ' + (result.error || ''));
+        }
+    } catch (e) {
+        alert('保存出错: ' + e.message);
+    }
+});
+
+// ==================== 导出JSON ====================
+document.getElementById('btn-export').addEventListener('click', () => {
+    const data = {
+        title: titleInput.value,
+        artist: artistInput.value,
+        key: keySelect.value,
+        time_signature: timeSelect.value,
+        tempo: parseInt(bpmInput.value) || 80,
+        inputArr: inputArr,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (data.title || '乐谱') + '.json';
+    a.click();
+});
+
+// ==================== 导入JSON ====================
+document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            titleInput.value = data.title || '';
+            artistInput.value = data.artist || '';
+            keySelect.value = data.key || 'D';
+            timeSelect.value = data.time_signature || '4/4';
+            bpmInput.value = data.tempo || 80;
+            inputArr = data.inputArr || [];
+            selectedIndices = [];
+            updatePreview();
+        } catch(err) {
+            alert('文件格式错误');
+        }
+    };
+    reader.readAsText(file);
+});
+
+// ==================== 导出PDF ====================
+document.getElementById('btn-export-pdf').addEventListener('click', () => {
+    window.print();
+});
+
+// ==================== 清空 ====================
+document.getElementById('btn-clear').addEventListener('click', () => {
+    if (confirm('确定要清空所有内容吗？')) {
+        inputArr = [];
+        selectedIndices = [];
+        updatePreview();
+    }
+});
+
+// ==================== 加载已保存简谱 ====================
+async function loadSavedScores() {
+    try {
+        const resp = await fetch('/api/scores');
+        const data = await resp.json();
+        if (data.scores && data.scores.length > 0) {
+            savedScores.innerHTML = data.scores.map(s => `
+                <div class="saved-score-item" onclick="loadScore(${s.id})">
+                    <span class="score-name">${s.title}</span>
+                    <span class="score-meta">${s.key}调</span>
+                </div>
+            `).join('');
+        } else {
+            savedScores.innerHTML = '<p class="placeholder-text">暂无保存的简谱</p>';
+        }
+    } catch (e) {
+        console.error('加载简谱列表失败:', e);
+    }
+}
+
+window.loadScore = async function(scoreId) {
+    try {
+        const resp = await fetch('/api/score/' + scoreId);
+        const data = await resp.json();
+        titleInput.value = data.title || '';
+        artistInput.value = data.artist || '';
+        keySelect.value = data.key || 'D';
+        timeSelect.value = data.time_signature || '4/4';
+        bpmInput.value = data.tempo || 80;
+        try { inputArr = JSON.parse(data.notes_data || '[]'); } catch { inputArr = []; }
+        selectedIndices = [];
+        updatePreview();
+    } catch (e) {
+        alert('加载失败: ' + e.message);
+    }
+};
+
+// ==================== 初始化 ====================
+document.getElementById('preview-area').addEventListener('click', deselectAll);
+renderKeyboard();
+updatePreview();
+loadSavedScores();
+</script>
+{% endblock %}

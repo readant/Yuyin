@@ -99,7 +99,37 @@
     </div>
 
     <!-- 简谱结果 -->
-    <div class="card" id="score-result-card" style="display: none;">
+    <div class="card" id="compare-card" style="display: none;">
+        <div class="card-header"><h2 class="card-title">对比练习</h2></div>
+        <div class="compare-area">
+            <div class="compare-step">
+                <span class="step-num">1</span>
+                <span>当前文件已作为参考音频</span>
+                <span id="ref-name" class="text-secondary"></span>
+            </div>
+            <div class="compare-step">
+                <span class="step-num">2</span>
+                <button id="btn-self-record" class="btn btn-secondary">录制我的演奏</button>
+                <div id="self-record-area" style="display: none; margin-top: 8px;">
+                    <span id="self-time" class="record-time">00:00</span>
+                    <div class="record-dot" id="self-dot"></div>
+                    <button id="btn-self-stop" class="btn btn-sm btn-primary">停止录制</button>
+                </div>
+            </div>
+            <div class="compare-step">
+                <span class="step-num">3</span>
+                <button id="btn-compare" class="btn btn-primary" disabled>开始对比</button>
+            </div>
+            <div id="compare-result" class="compare-result" style="display: none;">
+                <div class="stats-grid">
+                    <div class="stat-item"><div class="stat-value" id="match-rate">0%</div><div class="stat-label">音高匹配</div></div>
+                    <div class="stat-item"><div class="stat-value" id="matched-count">0</div><div class="stat-label">匹配音符</div></div>
+                    <div class="stat-item"><div class="stat-value" id="missed-count">0</div><div class="stat-label">遗漏</div></div>
+                </div>
+                <div id="diff-notes" class="diff-notes"></div>
+            </div>
+        </div>
+    </div>
         <div class="card-header"><h2 class="card-title">识别结果</h2></div>
         <div class="score-notes-list" id="score-notes-list"></div>
         <div class="score-text-result" id="score-text"></div>
@@ -416,8 +446,86 @@ function showAudioInfo() {
     document.getElementById('wave-card').style.display = 'block';
     document.getElementById('spectrum-card').style.display = 'block';
     document.getElementById('tools-card').style.display = 'block';
+    document.getElementById('compare-card').style.display = 'block';
+    document.getElementById('ref-name').textContent = currentFile.name;
     drawWaveform();
     drawSpectrum();
 }
+
+// ============ 对比练习 ============
+let selfRecorder, selfChunks = [], isSelfRecording = false, selfStream, selfBlob, selfBuffer, selfTimer;
+
+document.getElementById('btn-self-record').addEventListener('click', async () => {
+    const area = document.getElementById('self-record-area');
+    if (isSelfRecording) {
+        selfRecorder.stop(); selfStream.getTracks().forEach(t => t.stop());
+        document.getElementById('btn-compare').disabled = false;
+        return;
+    }
+    try {
+        selfStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        selfRecorder = new MediaRecorder(selfStream); selfChunks = [];
+        selfRecorder.ondataavailable = e => selfChunks.push(e.data);
+        selfRecorder.onstop = async () => {
+            isSelfRecording = false; clearInterval(selfTimer);
+            selfBlob = new Blob(selfChunks, { type: 'audio/wav' });
+            const ab = await selfBlob.arrayBuffer();
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            selfBuffer = await ctx.decodeAudioData(ab);
+            document.getElementById('self-time').textContent = fmt(selfBuffer.duration);
+            document.getElementById('self-dot').classList.remove('blink');
+            document.getElementById('btn-self-record').textContent = '录制我的演奏';
+            document.getElementById('self-record-area').style.display = 'none';
+        };
+        selfRecorder.start(); isSelfRecording = true;
+        area.style.display = 'flex'; document.getElementById('self-dot').classList.add('blink');
+        document.getElementById('btn-self-record').textContent = '停止';
+        let start = Date.now();
+        selfTimer = setInterval(() => document.getElementById('self-time').textContent = fmt((Date.now() - start) / 1000), 100);
+    } catch (e) { alert('无法访问麦克风: ' + e.message); }
+});
+
+document.getElementById('btn-compare').addEventListener('click', () => {
+    if (!audioBuffer || !selfBuffer) return;
+    const refNotes = extractPitches(audioBuffer), selfNotes = extractPitches(selfBuffer);
+    let matched = 0, missed = 0;
+    const diff = refNotes.map((n, i) => {
+        const s = selfNotes[i], ok = s && Math.abs(n.freq - s.freq) < 20;
+        if (ok) matched++; else missed++;
+        return {...n, match: ok};
+    });
+    document.getElementById('match-rate').textContent = Math.round(matched / (refNotes.length || 1) * 100) + '%';
+    document.getElementById('matched-count').textContent = matched;
+    document.getElementById('missed-count').textContent = missed;
+    document.getElementById('compare-result').style.display = 'block';
+    document.getElementById('diff-notes').innerHTML = diff.map(n =>
+        `<span class="diff-note ${n.match ? 'match' : 'miss'}">${n.note}</span>`).join('');
+});
+
+function extractPitches(buffer) {
+    const data = buffer.getChannelData(0), sr = buffer.sampleRate, notes = [];
+    const frameSize = 2048; let lastFreq = 0;
+    for (let i = 0; i < data.length - frameSize; i += frameSize/2) {
+        const frame = data.slice(i, i + frameSize);
+        let sum = 0; for (let v of frame) sum += v;
+        const mean = sum / frame.length;
+        let mC = 0, mL = 0;
+        for (let lag = 40; lag < frame.length/2; lag++) {
+            let c = 0;
+            for (let j = 0; j < frame.length-lag; j++) c += (frame[j]-mean)*(frame[j+lag]-mean);
+            if (c > mC) { mC = c; mL = lag; }
+        }
+        const freq = mL > 0 ? sr / mL : 0;
+        if (freq > 50 && freq < 2000 && Math.abs(freq - lastFreq) > 10) {
+            const st = Math.round(12 * Math.log2(freq / 440)) + 69;
+            const map = {'C':'1','D':'2','E':'3','F':'4','G':'5','A':'6','B':'7'};
+            const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+            notes.push({ note: map[names[st%12]]||names[st%12], freq: Math.round(freq) });
+            lastFreq = freq;
+        }
+    }
+    return notes;
+}
+
 </script>
 {% endblock %}

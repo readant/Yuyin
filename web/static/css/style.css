@@ -1705,6 +1705,16 @@ body {
 .record-dot.blink { animation: blink 1s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+/* 对比练习 */
+.compare-area { display: flex; flex-direction: column; gap: var(--space-md); }
+.compare-step { display: flex; align-items: center; gap: var(--space-md); }
+.step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+.compare-result { margin-top: var(--space-md); }
+.diff-notes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.diff-note { padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 16px; }
+.diff-note.match { background: #e8f5e9; color: #2e7d32; }
+.diff-note.miss { background: #ffebee; color: #c62828; }
+
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
 .bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }

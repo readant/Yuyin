@@ -84,6 +84,10 @@
                     </div>
                 </div>
                 <div id="tools-result" class="tools-result"></div>
+                <div id="progress-bar-wrap" class="progress-bar-wrap" style="display: none;">
+                    <div class="progress-bar-inner" id="progress-bar-inner"></div>
+                    <span id="progress-text" class="progress-text">分析中...</span>
+                </div>
             </div>
         </div>
         <div class="dash-col col-6">
@@ -118,10 +122,12 @@ ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('drag
 fi.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
 
 async function loadFile(file) {
+    showProgress('正在加载音频文件...');
     currentFile = file;
     const ab = await file.arrayBuffer();
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     audioBuffer = await audioCtx.decodeAudioData(ab);
+    hideProgress();
     showInfo();
 }
 
@@ -175,27 +181,39 @@ function drawSpectrum() {
 }
 
 // 处理
+function showProgress(msg) {
+    document.getElementById('progress-bar-wrap').style.display = 'block';
+    document.getElementById('progress-bar-inner').style.width = '50%';
+    document.getElementById('progress-text').textContent = msg;
+}
+function hideProgress() {
+    document.getElementById('progress-bar-wrap').style.display = 'none';
+    document.getElementById('progress-bar-inner').style.width = '0%';
+}
 function showResult(m, u) { document.getElementById('tools-result').innerHTML = u ? `<p>${m} <a href="${u}" download>下载</a></p>` : `<p>${m}</p>`; }
 async function doTrim() {
+    showProgress('正在裁剪音频...');
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch(`/api/audio/trim?start=${document.getElementById('trim-start').value}&end=${document.getElementById('trim-end').value}`, { method: 'POST', body: fd });
-    const d = await r.json(); showResult(d.success ? '裁剪完成' : '裁剪失败', d.url);
+    const d = await r.json(); hideProgress(); showResult(d.success ? '裁剪完成' : '裁剪失败', d.url);
 }
 async function doPitchShift() {
+    showProgress('正在变调处理...');
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch(`/api/audio/pitch?shift=${pitchShift}`, { method: 'POST', body: fd });
-    const d = await r.json(); showResult(d.success ? '变调完成' : '变调失败', d.url);
+    const d = await r.json(); hideProgress(); showResult(d.success ? '变调完成' : '变调失败', d.url);
 }
-function adjPitch(d) { pitchShift += d; document.getElementById('pitch-value').textContent = pitchShift; }
 async function doNormalize() {
+    showProgress('正在归一化音量...');
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch('/api/audio/normalize', { method: 'POST', body: fd });
-    const d = await r.json(); showResult(d.success ? '归一化完成' : '归一化失败', d.url);
+    const d = await r.json(); hideProgress(); showResult(d.success ? '归一化完成' : '归一化失败', d.url);
 }
 async function doAnalyze() {
+    showProgress('正在AI分析音高，生成简谱...');
     const fd = new FormData(); fd.append('file', currentFile);
     const r = await fetch('/api/audio/analyze', { method: 'POST', body: fd });
-    const d = await r.json();
+    const d = await r.json(); hideProgress();
     if (d.success) { scoreText = d.score_text; scoreNotes = d.notes || [];
         document.getElementById('score-result-card').style.display = 'block';
         document.getElementById('score-text').textContent = scoreText;

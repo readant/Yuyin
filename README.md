@@ -215,6 +215,32 @@ python launcher.py
 # 6. 浏览器自动打开 http://localhost:5000
 ```
 
+### 更新已克隆的仓库
+
+当项目有新版本发布时，按以下步骤更新本地代码：
+
+```bash
+# 1. 进入项目目录
+cd yuyin
+
+# 2. 拉取最新代码
+git pull origin main
+
+# 3. 安装新增的依赖（如有）
+pip install -r requirements.txt
+
+# 4. 重启服务
+python launcher.py
+```
+
+如果需要切换到开发分支：
+
+```bash
+# 切换到 dev 分支
+git checkout dev
+git pull origin dev
+```
+
 ### 环境变量配置
 
 ```bash

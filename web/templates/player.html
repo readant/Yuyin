@@ -69,6 +69,8 @@
     <div class="lyrics-display" id="lyrics-display" style="display: none;">
         <div class="lyrics-scroll" id="lyrics-scroll"></div>
     </div>
+
+
 </div>
 
 <!-- 播放列表面板 -->
@@ -415,10 +417,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
+    // 记录练习
+    async function recordPractice() {
         if (!currentTrack || !playStartTime) return;
         const duration = (Date.now() - playStartTime) / 1000;
-        if (duration < 5) return; // 少于5秒不记录
-
+        if (duration < 5) return;
         try {
             await fetch('/api/practice/record', {
                 method: 'POST',

@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}余音 - 跟吹练习{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">跟吹练习</h1>
+    <p class="page-subtitle">选择简谱，跟随节拍器吹奏，实时反馈音高</p>
+</div>
+
+<div class="practice-layout">
+    <!-- 左侧：简谱选择 + 指法显示 -->
+    <div class="practice-left">
+        <!-- 简谱选择 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">选择简谱</h2>
+            </div>
+            <div id="score-select" class="score-select-list">
+                <p class="placeholder-text">加载中...</p>
+            </div>
+        </div>
+
+        <!-- 简谱预览 -->
+        <div class="card" id="score-preview-card" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title" id="preview-title">简谱</h2>
+            </div>
+            <div id="score-preview" class="practice-preview"></div>
+        </div>
+    </div>
+
+    <!-- 中间：练习反馈 -->
+    <div class="practice-center">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">练习</h2>
+            </div>
+
+            <!-- 音高反馈 -->
+            <div class="pitch-feedback">
+                <div id="pitch-note" class="pitch-note">--</div>
+                <div id="pitch-expected" class="pitch-expected"></div>
+                <div id="pitch-status" class="pitch-status"></div>
+                <div class="pitch-meter">
+                    <div id="pitch-meter-fill" class="pitch-meter-fill"></div>
+                </div>
+            </div>
+
+            <!-- 控制 -->
+            <div class="practice-controls">
+                <button id="btn-start" class="btn btn-primary">开始练习</button>
+                <button id="btn-stop" class="btn btn-secondary" disabled>停止</button>
+            </div>
+
+            <!-- 节拍器 -->
+            <div class="metronome-area">
+                <div class="form-group">
+                    <label class="form-label">BPM</label>
+                    <input type="range" id="bpm-slider" class="progress-slider" min="40" max="200" value="80">
+                    <span id="bpm-display">80</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 得分 -->
+        <div class="card" id="score-card" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="correct-count">0</div>
+                    <div class="stat-label">正确</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="wrong-count">0</div>
+                    <div class="stat-label">错误</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="accuracy-rate">0%</div>
+                    <div class="stat-label">准确率</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：指法显示 -->
+    <div class="practice-right">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">指法</h2>
+            </div>
+            <div id="practice-fingering" class="practice-fingering">
+                <div class="fingering-holes-large">
+                    <div class="hole-large">-</div>
+                    <div class="hole-large">-</div>
+                    <div class="hole-large">-</div>
+                    <div class="hole-large">-</div>
+                    <div class="hole-large">-</div>
+                    <div class="hole-large">-</div>
+                </div>
+                <p class="placeholder-text">选择简谱后显示指法</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const FIVE_MAP = {
+        '(5)':'bbbbbb','(6)':'bbbbbw','(7)':'bbbbww','1':'bbbwww','2':'bbwwww',
+        '3':'bwwwww','4':'wbbwww','5':'wbbbbb','6':'bbbbbw','7':'bbbbww',
+        '[1]':'bbbwww','[2]':'bbwwww','[3]':'bwwwww','[4]':'hwwwww','[5]':'wbbbbb'
+    };
+
+    let selectedScore = null, scoreNotes = [], isRunning = false;
+    let audioCtx, micStream, analyser, currentNoteIdx = 0;
+    let correctCount = 0, wrongCount = 0;
+
+    // 加载简谱列表
+    async function loadScores() {
+        const resp = await fetch('/api/scores');
+        const data = await resp.json();
+        const list = document.getElementById('score-select');
+        if (data.scores?.length) {
+            list.innerHTML = data.scores.map(s => `
+                <div class="score-item" onclick="selectScore('${s.id}')">
+                    <span>${s.title}</span>
+                    <span style="color: var(--text-secondary);">${s.key}调</span>
+                </div>
+            `).join('');
+        } else {
+            list.innerHTML = '<p class="placeholder-text">暂无简谱，请先创建</p>';
+        }
+    }
+
+    // 选择简谱
+    window.selectScore = async (id) => {
+        document.querySelectorAll('.score-item').forEach(el => el.classList.remove('selected'));
+        event.target.closest('.score-item').classList.add('selected');
+
+        const resp = await fetch(`/api/score/${id}`);
+        const data = await resp.json();
+        selectedScore = data;
+        scoreNotes = JSON.parse(data.notes_data || '[]');
+        document.getElementById('score-preview-card').style.display = 'block';
+        document.getElementById('preview-title').textContent = data.title;
+
+        // 渲染简谱预览
+        document.getElementById('score-preview').innerHTML = scoreNotes.map(item => {
+            if (item.note === 'BAR') return '<span class="bar-line-mini">|</span>';
+            return `<span class="note-mini">${item.note.replace(/[()\[\]]/g,'')}</span>`;
+        }).join('');
+
+        // 默认BPM
+        document.getElementById('bpm-slider').value = data.tempo || 80;
+        document.getElementById('bpm-display').textContent = data.tempo || 80;
+    };
+
+    // BPM滑块
+    document.getElementById('bpm-slider').addEventListener('input', e => {
+        document.getElementById('bpm-display').textContent = e.target.value;
+    });
+
+    // 开始练习
+    document.getElementById('btn-start').addEventListener('click', async () => {
+        if (!selectedScore) { alert('请先选择简谱'); return; }
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const source = audioCtx.createMediaStreamSource(micStream);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 2048;
+            source.connect(analyser);
+            isRunning = true;
+            correctCount = 0; wrongCount = 0;
+            currentNoteIdx = 0;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('score-card').style.display = 'block';
+            runPractice();
+        } catch (e) {
+            alert('无法访问麦克风: ' + e.message);
+        }
+    });
+
+    // 停止练习
+    document.getElementById('btn-stop').addEventListener('click', () => {
+        isRunning = false;
+        if (micStream) micStream.getTracks().forEach(t => t.stop());
+        if (audioCtx) audioCtx.close();
+        document.getElementById('btn-start').disabled = false;
+        document.getElementById('btn-stop').disabled = true;
+    });
+
+    // 练习主循环
+    function runPractice() {
+        if (!isRunning) return;
+
+        // 检测音高
+        const buf = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(buf);
+        const freq = detectFrequency(buf);
+        const note = freqToNoteStr(freq);
+
+        if (note && freq > 50 && freq < 2000) {
+            document.getElementById('pitch-note').textContent = note;
+            document.getElementById('pitch-meter-fill').style.width = '60%';
+
+            // 比对当前音符
+            if (currentNoteIdx < scoreNotes.length) {
+                const expected = scoreNotes[currentNoteIdx];
+                if (expected.note === note) {
+                    correctCount++;
+                    currentNoteIdx++;
+                    document.getElementById('pitch-status').textContent = '✓';
+                    document.getElementById('pitch-status').style.color = '#2e7d32';
+                }
+            }
+        } else {
+            document.getElementById('pitch-meter-fill').style.width = '0%';
+        }
+
+        // 更新指法
+        if (currentNoteIdx < scoreNotes.length) {
+            const expectedNote = scoreNotes[currentNoteIdx].note;
+            document.getElementById('pitch-expected').textContent = '目标: ' + expectedNote;
+            updateFingering(expectedNote);
+        }
+
+        // 更新得分
+        document.getElementById('correct-count').textContent = correctCount;
+        const total = correctCount + wrongCount || 1;
+        document.getElementById('accuracy-rate').textContent = Math.round(correctCount / total * 100) + '%';
+
+        requestAnimationFrame(runPractice);
+    }
+
+    function detectFrequency(buf) {
+        let sum = 0;
+        for (let v of buf) sum += v;
+        const mean = sum / buf.length;
+        let maxCorr = 0, maxLag = 0;
+        for (let lag = 40; lag < buf.length / 2; lag++) {
+            let corr = 0;
+            for (let i = 0; i < buf.length - lag; i++) corr += (buf[i] - mean) * (buf[i + lag] - mean);
+            if (corr > maxCorr) { maxCorr = corr; maxLag = lag; }
+        }
+        return maxLag > 0 ? audioCtx.sampleRate / maxLag : 0;
+    }
+
+    function freqToNoteStr(freq) {
+        if (freq < 50 || freq > 2000) return null;
+        const notes = ['1','#1','2','#2','3','4','#4','5','#5','6','#6','7'];
+        const semitone = Math.round(12 * Math.log2(freq / 440)) + 69;
+        return notes[semitone % 12].replace('#', '');
+    }
+
+    function updateFingering(note) {
+        const f = FIVE_MAP[note];
+        if (!f) return;
+        const holes = document.querySelectorAll('#practice-fingering .hole-large');
+        for (let i = 0; i < 6 && i < f.length; i++) {
+            holes[i].classList.toggle('pressed', f[i] === 'b');
+            holes[i].textContent = f[i] === 'b' ? '●' : '○';
+        }
+    }
+
+    loadScores();
+});
+</script>
+{% endblock %}

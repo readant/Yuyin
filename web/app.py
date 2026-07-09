@@ -93,6 +93,12 @@ async def fingering_page(request: Request):
     return templates.TemplateResponse(request, "fingering.html")
 
 
+@app.get("/practice", response_class=HTMLResponse)
+async def practice_page(request: Request):
+    """跟吹练习"""
+    return templates.TemplateResponse(request, "practice.html")
+
+
 @app.get("/lyrics", response_class=HTMLResponse)
 async def lyrics_page(request: Request):
     """歌词编辑"""

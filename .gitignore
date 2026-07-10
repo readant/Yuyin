@@ -16,6 +16,7 @@ ENV/
 
 # 项目
 data/*.db
+data/*.json
 logs/
 *.log
 

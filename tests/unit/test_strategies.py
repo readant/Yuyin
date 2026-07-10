@@ -1,6 +1,6 @@
 """策略模式单元测试"""
 import unittest
-from src.audio.strategies import (
+from src.application.strategies import (
     AudioAnalyzerContext,
     LibrosaStrategy,
     SimpleStrategy,

@@ -44,6 +44,22 @@ from src.domain.models.database import DatabaseManager
 
 score_service = ScoreService()
 
+# 启动时加载已保存的歌词
+import json as _json
+
+_LYRICS_FILE = os.path.join(ROOT_DIR, "data", "current_lyrics.json")
+
+def _load_saved_lyrics():
+    if os.path.exists(_LYRICS_FILE):
+        with open(_LYRICS_FILE, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+            if data:
+                lrc = "\n".join(f"[{int(l['time']//60):02d}:{int(l['time']%60):02d}.{int((l['time']%1)*1000):03d}]{l['text']}" for l in data)
+                from src.application.services.lyrics_service import lyrics_manager
+                lyrics_manager.load_from_text(lrc, "lrc")
+
+_load_saved_lyrics()
+
 # ==================== 请求模型 ====================
 
 class ScanRequest(BaseModel):
@@ -543,6 +559,19 @@ async def get_recent_listen():
 
 from src.application.services.lyrics_service import lyrics_manager, LyricsParser
 
+_LYRICS_FILE = os.path.join(ROOT_DIR, "data", "current_lyrics.json")
+
+def _save_lyrics():
+    with open(_LYRICS_FILE, "w", encoding="utf-8") as f:
+        json.dump([{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics], f, ensure_ascii=False)
+
+def _load_lyrics():
+    if os.path.exists(_LYRICS_FILE):
+        with open(_LYRICS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            lrc = "\n".join(LyricsParser.to_lrc([LyricLine(time=l["time"],text=l["text"],index=l["index"]) for l in data]) if data else "")
+            lyrics_manager.load_from_text(lrc, "lrc")
+
 class LyricsRequest(BaseModel):
     text: str
     format: str = "lrc"
@@ -560,12 +589,17 @@ async def get_lyrics():
 async def load_lyrics(req: LyricsRequest):
     """加载歌词（从文本）"""
     success = lyrics_manager.load_from_text(req.text, req.format)
+    if success:
+        with open(_LYRICS_FILE, "w", encoding="utf-8") as f:
+            _json.dump([{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics], f, ensure_ascii=False)
     return {"success": success, "count": lyrics_manager.count}
 
 @app.delete("/api/lyrics")
 async def clear_lyrics():
     """清空歌词"""
     lyrics_manager.clear()
+    if os.path.exists(_LYRICS_FILE):
+        os.remove(_LYRICS_FILE)
     return {"success": True}
 
 @app.get("/api/lyrics/export")

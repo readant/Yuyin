@@ -1300,14 +1300,13 @@ body {
 /* ==================== 沉浸式播放器 ==================== */
 .immersive-player {
     position: relative;
-    width: calc(100% + var(--space-xl) * 2);
+    width: 100%;
     height: calc(100vh - 60px);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     margin: calc(-1 * var(--space-xl));
     margin-top: calc(-1 * var(--space-xl));
-    margin-left: calc(-1 * var(--space-xl) + 40px);
 }
 
 .player-bg {

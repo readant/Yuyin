@@ -2,6 +2,13 @@
 
 {% block title %}余音 - 欣赏{% endblock %}
 
+{% block head %}
+<style>
+.main-content { padding-left: calc(var(--space-xl) + 40px) !important; }
+body { overflow-x: hidden; }
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- 沉浸式播放器 -->
 <div class="immersive-player" id="immersive-player">

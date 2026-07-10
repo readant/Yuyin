@@ -133,10 +133,21 @@
     <div class="card">
         <div class="card-header"><h2 class="card-title">练习统计</h2></div>
         <div class="stats-grid stats-grid-4">
-            <div class="stat-item"><div class="stat-value" id="stat-today-time">0</div><div class="stat-label">今日（分钟）</div></div>
+            <div class="stat-item"><div class="stat-value" id="stat-today-time">0</div><div class="stat-label">今日练习（分钟）</div></div>
             <div class="stat-item"><div class="stat-value" id="stat-today-sessions">0</div><div class="stat-label">今日次数</div></div>
-            <div class="stat-item"><div class="stat-value" id="stat-total-time">0</div><div class="stat-label">累计（分钟）</div></div>
+            <div class="stat-item"><div class="stat-value" id="stat-total-time">0</div><div class="stat-label">累计练习（分钟）</div></div>
             <div class="stat-item"><div class="stat-value" id="stat-total-sessions">0</div><div class="stat-label">累计次数</div></div>
+        </div>
+    </div>
+
+    <!-- 听歌统计 -->
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">听歌统计</h2></div>
+        <div class="stats-grid stats-grid-4">
+            <div class="stat-item"><div class="stat-value" id="listen-today">0</div><div class="stat-label">今日听歌（分钟）</div></div>
+            <div class="stat-item"><div class="stat-value" id="listen-total">0</div><div class="stat-label">累计听歌（小时）</div></div>
+            <div class="stat-item"><div class="stat-value" id="listen-count">0</div><div class="stat-label">听歌次数</div></div>
+            <div class="stat-item"><div class="stat-value" id="listen-last">--</div><div class="stat-label">最近曲目</div></div>
         </div>
     </div>
 
@@ -236,6 +247,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.clearScanDirs = async () => { if(!confirm('确定清空曲库目录？'))return; await fetch('/api/scan-dirs',{method:'DELETE'}); document.getElementById('data-status').textContent='曲库目录已清空'; };
     window.clearPractice = async () => { if(!confirm('确定清空练习记录？'))return; document.getElementById('data-status').textContent='练习记录已清空'; };
 
+    // 听歌统计
+    async function loadListenStats() {
+        try {
+            const r = await fetch('/api/listen/stats'); const d = await r.json();
+            document.getElementById('listen-today').textContent = d.today_minutes || 0;
+            document.getElementById('listen-total').textContent = d.total_hours || 0;
+            document.getElementById('listen-count').textContent = d.total_tracks || 0;
+            const rec = await fetch('/api/listen/recent'); const rd = await rec.json();
+            document.getElementById('listen-last').textContent = rd.last_track || '--';
+        } catch(e) {}
+    }
+
     // 简谱管理
     async function loadScoresManage() {
         const c = document.getElementById('scores-manage');
@@ -263,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) {}
     }
 
-    loadBgs(); loadStats(); loadScoresManage();
+    loadBgs(); loadStats(); loadScoresManage(); loadListenStats();
 });
 </script>
 {% endblock %}

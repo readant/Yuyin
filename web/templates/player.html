@@ -289,6 +289,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ==================== 播放结束 ====================
     audio.addEventListener('ended', () => {
+        // 记录听歌
+        recordListen();
         // 记录练习
         recordPractice();
         nextTrack();
@@ -416,6 +418,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
+    }
+
+    async function recordListen() {
+        if (!currentTrack || !playStartTime) return;
+        const duration = (Date.now() - playStartTime) / 1000;
+        if (duration < 5) return;
+        try {
+            await fetch('/api/listen/record', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ track_title: currentTrack.title, duration })
+            });
+        } catch (e) { console.error('听歌记录失败:', e); }
     }
 
     // 记录练习

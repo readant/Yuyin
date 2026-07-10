@@ -477,6 +477,68 @@ async def get_today_practice():
     }
 
 
+# ==================== 听歌统计API ====================
+
+import time as time_module
+
+_listen_records_file = os.path.join(ROOT_DIR, "data", "listen_records.json")
+
+def _load_listen_records():
+    if os.path.exists(_listen_records_file):
+        with open(_listen_records_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def _save_listen_records(records):
+    os.makedirs(os.path.dirname(_listen_records_file), exist_ok=True)
+    with open(_listen_records_file, "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False)
+
+
+class ListenRequest(BaseModel):
+    track_title: str = ""
+    duration: float = 0
+
+
+@app.post("/api/listen/record")
+async def record_listen(req: ListenRequest):
+    """记录一次听歌"""
+    records = _load_listen_records()
+    records.append({
+        "track_title": req.track_title,
+        "duration": round(req.duration),
+        "timestamp": time_module.time()
+    })
+    _save_listen_records(records)
+    return {"success": True}
+
+
+@app.get("/api/listen/stats")
+async def get_listen_stats():
+    """获取听歌统计"""
+    records = _load_listen_records()
+    total = sum(r["duration"] for r in records)
+    today_start = time_module.time() - (time_module.time() % 86400)
+    today = sum(r["duration"] for r in records if r.get("timestamp", 0) >= today_start)
+    return {
+        "total_seconds": total,
+        "total_minutes": round(total / 60, 1),
+        "total_hours": round(total / 3600, 1),
+        "today_minutes": round(today / 60, 1),
+        "total_tracks": len(records)
+    }
+
+
+@app.get("/api/listen/recent")
+async def get_recent_listen():
+    """获取最近听歌"""
+    records = _load_listen_records()
+    if records:
+        last = records[-1]
+        return {"last_track": last.get("track_title", "--")}
+    return {"last_track": "--"}
+
+
 # ==================== 歌词API ====================
 
 from src.application.services.lyrics_service import lyrics_manager, LyricsParser

@@ -426,10 +426,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadLyricsFromText(text) {
         const format = text.match(/\[\d{2}:\d{2}\.\d{2,3}\]/) ? 'lrc' : 'simple';
+        const trackName = currentTrack ? currentTrack.title : '';
         await fetch('/api/lyrics', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text, format })
+            body: JSON.stringify({ text, format, track_title: trackName })
         });
         await refreshLyrics();
     }
@@ -467,9 +468,11 @@ document.addEventListener('DOMContentLoaded', () => {
         currentLyricIndex = -1;
         lyricsDisplay.style.display = 'none';
         vinylContainer.style.display = 'block';
+        document.getElementById('btn-lyrics').classList.remove('active');
 
+        const trackName = currentTrack ? currentTrack.title : '';
         try {
-            const resp = await fetch('/api/lyrics');
+            const resp = await fetch('/api/lyrics?track=' + encodeURIComponent(trackName));
             const data = await resp.json();
             if (data.lyrics && data.lyrics.length > 0) {
                 lyricsData = data.lyrics;
@@ -482,8 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 lyricsDisplay.style.display = 'flex';
                 vinylContainer.style.display = 'none';
                 document.getElementById('btn-lyrics').classList.add('active');
-            } else {
-                document.getElementById('btn-lyrics').classList.remove('active');
             }
         } catch (e) {
             console.log('未加载歌词');

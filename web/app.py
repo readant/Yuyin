@@ -47,18 +47,18 @@ score_service = ScoreService()
 # 启动时加载已保存的歌词
 import json as _json
 
-_LYRICS_FILE = os.path.join(ROOT_DIR, "data", "current_lyrics.json")
+_LYRICS_FILE = os.path.join(ROOT_DIR, "data", "track_lyrics.json")
 
-def _load_saved_lyrics():
+def _load_all_lyrics():
     if os.path.exists(_LYRICS_FILE):
         with open(_LYRICS_FILE, "r", encoding="utf-8") as f:
-            data = _json.load(f)
-            if data:
-                lrc = "\n".join(f"[{int(l['time']//60):02d}:{int(l['time']%60):02d}.{int((l['time']%1)*1000):03d}]{l['text']}" for l in data)
-                from src.application.services.lyrics_service import lyrics_manager
-                lyrics_manager.load_from_text(lrc, "lrc")
+            return _json.load(f)
+    return {}
 
-_load_saved_lyrics()
+def _save_all_lyrics(data):
+    os.makedirs(os.path.dirname(_LYRICS_FILE), exist_ok=True)
+    with open(_LYRICS_FILE, "w", encoding="utf-8") as f:
+        _json.dump(data, f, ensure_ascii=False, indent=2)
 
 # ==================== 请求模型 ====================
 
@@ -559,52 +559,66 @@ async def get_recent_listen():
 
 from src.application.services.lyrics_service import lyrics_manager, LyricsParser
 
-_LYRICS_FILE = os.path.join(ROOT_DIR, "data", "current_lyrics.json")
-
-def _save_lyrics():
-    with open(_LYRICS_FILE, "w", encoding="utf-8") as f:
-        json.dump([{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics], f, ensure_ascii=False)
-
-def _load_lyrics():
-    if os.path.exists(_LYRICS_FILE):
-        with open(_LYRICS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            lrc = "\n".join(LyricsParser.to_lrc([LyricLine(time=l["time"],text=l["text"],index=l["index"]) for l in data]) if data else "")
-            lyrics_manager.load_from_text(lrc, "lrc")
-
 class LyricsRequest(BaseModel):
     text: str
     format: str = "lrc"
+    track_title: str = ""
+
+def _get_lyrics_for_track(track_title: str):
+    all_lyrics = _load_all_lyrics()
+    return all_lyrics.get(track_title, [])
+
+def _save_lyrics_for_track(track_title: str, lyrics_data):
+    all_lyrics = _load_all_lyrics()
+    if lyrics_data:
+        all_lyrics[track_title] = lyrics_data
+    else:
+        all_lyrics.pop(track_title, None)
+    _save_all_lyrics(all_lyrics)
 
 @app.get("/api/lyrics")
-async def get_lyrics():
-    """获取当前歌词"""
+async def get_lyrics(track: str = ""):
+    """获取指定曲目的歌词"""
+    if track:
+        lyrics = _get_lyrics_for_track(track)
+        return {
+            "lyrics": lyrics,
+            "has_lyrics": len(lyrics) > 0,
+            "track": track,
+        }
+    # 兼容旧接口：返回全局歌词管理器中的歌词
     return {
         "lyrics": [{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics],
         "has_lyrics": lyrics_manager.has_lyrics,
         "current_index": lyrics_manager.current_index,
+        "track": track,
     }
 
 @app.post("/api/lyrics")
 async def load_lyrics(req: LyricsRequest):
     """加载歌词（从文本）"""
     success = lyrics_manager.load_from_text(req.text, req.format)
-    if success:
-        with open(_LYRICS_FILE, "w", encoding="utf-8") as f:
-            _json.dump([{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics], f, ensure_ascii=False)
+    if success and req.track_title:
+        lyrics_data = [{"time": l.time, "text": l.text, "index": l.index} for l in lyrics_manager.lyrics]
+        _save_lyrics_for_track(req.track_title, lyrics_data)
     return {"success": success, "count": lyrics_manager.count}
 
 @app.delete("/api/lyrics")
-async def clear_lyrics():
-    """清空歌词"""
+async def clear_lyrics(track: str = ""):
+    """清空指定曲目的歌词"""
+    if track:
+        _save_lyrics_for_track(track, [])
     lyrics_manager.clear()
-    if os.path.exists(_LYRICS_FILE):
-        os.remove(_LYRICS_FILE)
     return {"success": True}
 
 @app.get("/api/lyrics/export")
-async def export_lyrics():
+async def export_lyrics(track: str = ""):
     """导出LRC格式歌词"""
+    if track:
+        lyrics = _get_lyrics_for_track(track)
+        if lyrics:
+            lrc = "\n".join(f"[{int(l['time']//60):02d}:{int(l['time']%60):02d}.{int((l['time']%1)*1000):03d}]{l['text']}" for l in lyrics)
+            return {"lrc": lrc}
     return {"lrc": lyrics_manager.get_all_as_text()}
 
 

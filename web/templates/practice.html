@@ -94,7 +94,7 @@ const FIVE_MAP = {'(5)':'bbbbbb','(6)':'bbbbbw','(7)':'bbbbww','1':'bbbwww','2':
 
 let scoreNotes = [], selScore, bpm = 80, noteIdx = 0, isRunning = false;
 let correct = 0, wrong = 0, metroTimer, stepTimer;
-let audioCtx, micStream, analyser, recChunks = [], recorder, startTime;
+let audioCtx, micStream, analyser, recChunks = [], recorder, startTime, recordedBuffer = null;
 
 // ============ 加载简谱 ============
 async function loadScores() {
@@ -170,8 +170,14 @@ async function startPractice() {
         audioCtx.createMediaStreamSource(micStream).connect(analyser);
 
         // 录音
-        recorder = new MediaRecorder(micStream); recChunks = [];
+        recorder = new MediaRecorder(micStream); recChunks = []; recordedBuffer = null;
         recorder.ondataavailable = e => recChunks.push(e.data);
+        recorder.onstop = async () => {
+            const blob = new Blob(recChunks, { type: 'audio/wav' });
+            const ab = await blob.arrayBuffer();
+            const ctx = new (window.AudioContext||window.webkitAudioContext)();
+            recordedBuffer = await ctx.decodeAudioData(ab);
+        };
         recorder.start();
     } catch(e) { alert('无法访问麦克风: '+e.message); return; }
 
@@ -234,21 +240,58 @@ function detectLoop() {
 function stopPractice() {
     isRunning = false; clearInterval(metroTimer); clearTimeout(stepTimer);
     if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (recorder) recorder.stop();
+    if (recorder && recorder.state === 'recording') recorder.stop();
     document.getElementById('btn-start').disabled = false;
     document.getElementById('btn-stop').disabled = true;
     document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active'));
 
-    // 显示结果
-    document.getElementById('result-card').style.display = 'block';
-    document.getElementById('stat-time').textContent = Math.round((Date.now() - startTime) / 1000) + 's';
-    document.getElementById('stat-wrong').textContent = Math.max(0, noteIdx - correct);
-    document.getElementById('diff-notes').innerHTML = scoreNotes.map((n, i) =>
-        `<span class="diff-note ${i < noteIdx ? (n.note !== 'BAR' ? 'match' : '') : 'miss'}">${n.note.replace(/[()\[\]]/g,'')}</span>`).join('');
+    // 显示结果，延迟等录音处理完
+    showResults();
 }
 
 document.getElementById('btn-start').addEventListener('click', startPractice);
 document.getElementById('btn-stop').addEventListener('click', stopPractice);
+
+// ============ 显示结果（基于录音比对） ============
+async function showResults() {
+    // 等待录音处理完
+    let retries = 0;
+    while (!recordedBuffer && retries < 20) { await new Promise(r => setTimeout(r, 100)); retries++; }
+
+    document.getElementById('result-card').style.display = 'block';
+    document.getElementById('stat-time').textContent = Math.round((Date.now() - startTime) / 1000) + 's';
+    document.getElementById('stat-wrong').textContent = Math.max(0, noteIdx - correct);
+
+    if (recordedBuffer) {
+        // 从录音中提取音高序列
+        const recPitches = extractPitches(recordedBuffer);
+        document.getElementById('diff-notes').innerHTML = scoreNotes.map((n, i) => {
+            if (n.note === 'BAR') return '<span class="bar-line-mini">|</span>';
+            const rec = recPitches[i];
+            const isMatch = rec && rec.note === n.note;
+            return `<span class="diff-note ${isMatch ? 'match' : 'miss'}">${n.note.replace(/[()\[\]]/g,'')}${rec ? '<small>'+rec.note.replace(/[()\[\]]/g,'')+'</small>' : ''}</span>`;
+        }).join('');
+    } else {
+        document.getElementById('diff-notes').innerHTML = scoreNotes.map((n, i) =>
+            `<span class="diff-note ${i < noteIdx ? (n.note !== 'BAR' ? 'match' : '') : 'miss'}">${n.note.replace(/[()\[\]]/g,'')}</span>`).join('');
+    }
+}
+
+function extractPitches(buffer) {
+    const data = buffer.getChannelData(0), sr = buffer.sampleRate, notes = [];
+    const step = Math.floor(sr * 0.1); // 每100ms检测一次
+    for (let i = 0; i < data.length - step; i += step) {
+        const seg = data.slice(i, i + step);
+        const freq = detectFreq(new Float32Array(seg), sr);
+        if (freq > 50 && freq < 2000) {
+            const note = freqToNote(freq);
+            if (!notes.length || notes[notes.length-1].note !== note) {
+                notes.push({ note, freq: Math.round(freq) });
+            }
+        }
+    }
+    return notes;
+}
 
 // ============ 音高检测 ============
 function detectFreq(buf, sr) {

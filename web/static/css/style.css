@@ -1806,6 +1806,11 @@ body {
 
 .stats-grid-4 { grid-template-columns: repeat(4, 1fr); }
 
+/* 简谱管理 */
+.scores-manage { display: flex; flex-direction: column; gap: 4px; }
+.score-mg-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--bg-panel); font-size: 13px; }
+.score-mg-item:hover { background: var(--bg-secondary); }
+
 /* 练习页节拍器 */
 .bpm-row { display: flex; align-items: center; gap: 6px; justify-content: center; margin-bottom: 8px; }
 .bpm-value-large { font-size: 28px; font-weight: 700; color: var(--color-primary); min-width: 60px; text-align: center; }

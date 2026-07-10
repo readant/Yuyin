@@ -27,6 +27,9 @@
         </div>
 
         <div class="lyrics-center" id="lyrics-center" style="display: none;">
+            <div class="lyrics-center-header" id="lyrics-center-header">
+                <span id="lrc-time">00:00</span> / <span id="lrc-total">00:00</span>
+            </div>
             <div class="lyrics-center-scroll" id="lyrics-center-scroll"></div>
         </div>
     </div>
@@ -478,6 +481,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
+        // 更新歌词时钟
+        document.getElementById('lrc-time').textContent = formatTime(currentTime);
+        const last = lyricsData[lyricsData.length - 1];
+        document.getElementById('lrc-total').textContent = formatTime(last ? last.time : 0);
     }
 
     async function recordListen() {

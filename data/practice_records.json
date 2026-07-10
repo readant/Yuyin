@@ -68,5 +68,25 @@
     "timestamp": 1783647739.2360382,
     "key": "D",
     "fingering": "5"
+  },
+  {
+    "score_id": 0,
+    "score_title": "背景音乐",
+    "duration": 243.825,
+    "notes_played": 0,
+    "accuracy": 0.0,
+    "timestamp": 1783648279.7896135,
+    "key": "D",
+    "fingering": "5"
+  },
+  {
+    "score_id": 0,
+    "score_title": "遗憾吗 (Eom)",
+    "duration": 19.8,
+    "notes_played": 0,
+    "accuracy": 0.0,
+    "timestamp": 1783648299.5997896,
+    "key": "D",
+    "fingering": "5"
   }
 ]

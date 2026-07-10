@@ -1552,6 +1552,12 @@ body {
     overflow-y: auto;
     text-align: center;
     width: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.lyrics-center-scroll::-webkit-scrollbar {
+    display: none;
 }
 
 .lyrics-center-scroll .lyric-line-item {

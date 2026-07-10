@@ -1529,6 +1529,49 @@ body {
     transition: all 0.3s;
 }
 
+/* 播放器中心歌词 */
+.lyrics-center {
+    width: 100%;
+    max-width: 500px;
+    height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.lyrics-center-scroll {
+    text-align: center;
+    padding: 20px;
+}
+
+.lyrics-center-scroll .lyric-line-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s;
+    justify-content: center;
+}
+
+.lyrics-center-scroll .lyric-line-item .lyric-time {
+    display: none;
+}
+
+.lyrics-center-scroll .lyric-line-item.active .lyric-text {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.lyrics-center-scroll .lyric-line-item:not(.active) .lyric-text {
+    color: var(--text-tertiary);
+    font-size: 15px;
+}
+
+.lyrics-center-scroll .lyric-line-item:not(.active) {
+    opacity: 0.5;
+}
+
 .lyrics-scroll {
     max-height: 200px;
     overflow-y: auto;

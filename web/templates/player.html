@@ -16,14 +16,18 @@
             <p id="track-artist" class="immersive-artist">请从曲库选择一首歌曲</p>
         </div>
 
-        <!-- 唱片 -->
-        <div class="vinyl-container">
+        <!-- 唱片 / 歌词（互斥显示） -->
+        <div class="vinyl-container" id="vinyl-container">
             <div class="vinyl-disc" id="vinyl-disc">
                 <div class="vinyl-grooves"></div>
                 <div class="vinyl-inner">
                     <span class="vinyl-note">~</span>
                 </div>
             </div>
+        </div>
+
+        <div class="lyrics-center" id="lyrics-center" style="display: none;">
+            <div class="lyrics-center-scroll" id="lyrics-center-scroll"></div>
         </div>
     </div>
 
@@ -80,15 +84,7 @@
         </div>
     </div>
 
-    <!-- 歌词显示 -->
-    <div class="lyrics-display" id="lyrics-display" style="display: none;">
-        <div class="lyrics-scroll" id="lyrics-scroll"></div>
-    </div>
-
-
-</div>
-
-<!-- 播放列表面板 -->
+    <!-- 歌词加载弹窗 -->
 <div class="side-panel" id="playlist-panel">
     <div class="panel-header">
         <h3>播放列表</h3>
@@ -134,8 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const volumePopup = document.getElementById('volume-popup');
     const volumeSlider = document.getElementById('volume-slider');
     const playerBg = document.getElementById('player-bg');
-    const lyricsDisplay = document.getElementById('lyrics-display');
-    const lyricsScroll = document.getElementById('lyrics-scroll');
+    const lyricsDisplay = document.getElementById('lyrics-center');
+    const lyricsScroll = document.getElementById('lyrics-center-scroll');
+    const vinylContainer = document.getElementById('vinyl-container');
 
     // ==================== 状态 ====================
     let currentTrack = null;
@@ -439,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lyricsData = [];
         currentLyricIndex = -1;
         lyricsDisplay.style.display = 'none';
+        vinylContainer.style.display = 'block';
 
         try {
             const resp = await fetch('/api/lyrics');
@@ -452,6 +450,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`
                 ).join('');
                 lyricsDisplay.style.display = 'flex';
+                vinylContainer.style.display = 'none';
+                document.getElementById('btn-lyrics').classList.add('active');
+            } else {
+                document.getElementById('btn-lyrics').classList.remove('active');
             }
         } catch (e) {
             console.log('未加载歌词');

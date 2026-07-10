@@ -1466,18 +1466,24 @@ body {
 .controls-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    position: relative;
 }
 
 .controls-left,
-.controls-center,
 .controls-right {
     display: flex;
     align-items: center;
     gap: 12px;
+    position: absolute;
 }
 
+.controls-left { left: 0; }
+.controls-right { right: 0; }
+
 .controls-center {
+    display: flex;
+    align-items: center;
     gap: 20px;
 }
 

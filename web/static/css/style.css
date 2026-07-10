@@ -1781,27 +1781,185 @@ body {
 .dd-hole.o { color: var(--text-tertiary); }
 
 /* ==================== 练习页新布局 ==================== */
-.pr-bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px; flex-wrap: wrap; }
-.pr-main { display: flex; gap: 16px; height: calc(100vh - 180px); }
-.pr-dongdong-area { flex: 1; overflow-y: auto; padding: 8px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
-.pr-dongdong { display: flex; flex-wrap: wrap; gap: 12px; padding: 16px; justify-content: center; align-content: flex-start; }
-.dd-unit { display: flex; flex-direction: column; align-items: center; padding: 8px 10px; border-radius: 8px; border: 2px solid transparent; transition: all 0.2s; min-width: 48px; }
-.dd-unit.active { border-color: var(--color-primary); background: rgba(139,37,0,0.08); transform: scale(1.15); z-index: 2; }
-.dd-unit.done { opacity: 0.5; }
-.dd-note { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
-.dd-holes { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.dd-dot { font-size: 14px; }
-.dd-dot.on { color: var(--text-primary); }
-.dd-dot.off { color: var(--border-color); }
-.pr-right { width: 140px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-.pr-fingering-mini { text-align: center; padding: 12px 8px; background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); }
-.fingering-holes-small { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
-.hole-small { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border-color); background: var(--bg-primary); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-tertiary); transition: all 0.15s; }
-.hole-small.on { background: var(--ink); color: white; border-color: var(--ink); }
-.pr-fn-note { font-size: 20px; font-weight: 700; color: var(--color-primary); }
-.pr-detect-note { font-size: 22px; font-weight: 700; color: var(--text-primary); text-align: center; }
-.pr-status { font-size: 18px; font-weight: 600; text-align: center; }
-.pr-canvas { width: 100%; border-radius: 4px; background: #F5F0E8; display: block; }
+.pr-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    background: linear-gradient(180deg, var(--bg-elevated), var(--bg-panel));
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.pr-main {
+    display: flex; gap: 12px;
+    height: calc(100vh - 170px);
+}
+
+/* 洞洞谱区 */
+.pr-dongdong-area {
+    flex: 1; overflow-y: auto;
+    padding: 20px;
+    background: linear-gradient(180deg, #fefdf8 0%, #faf7f0 100%);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: inset 0 0 40px rgba(139,37,0,0.02);
+}
+
+.pr-dongdong {
+    display: flex; flex-wrap: wrap;
+    gap: 10px; padding: 8px;
+    justify-content: center; align-content: flex-start;
+}
+
+.dd-unit {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.6);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 52px;
+    cursor: default;
+}
+
+.dd-unit:hover {
+    background: rgba(139,37,0,0.04);
+}
+
+.dd-unit.active {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, rgba(139,37,0,0.08), rgba(139,37,0,0.04));
+    transform: scale(1.12);
+    box-shadow: 0 2px 12px rgba(139,37,0,0.12);
+    z-index: 2;
+}
+
+.dd-unit.done {
+    opacity: 0.45;
+    filter: grayscale(0.3);
+}
+
+.dd-note {
+    font-size: 26px; font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+    font-family: 'Noto Serif SC', serif;
+}
+
+.dd-holes {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+
+.dd-dot { font-size: 13px; transition: all 0.15s; }
+.dd-dot.on { color: var(--ink); }
+.dd-dot.off { color: #d4cfc4; }
+
+/* 右侧栏 */
+.pr-right {
+    width: 132px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+
+.pr-fingering-mini {
+    text-align: center; padding: 14px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.fingering-holes-small {
+    display: flex; gap: 7px; justify-content: center; margin-bottom: 10px;
+}
+
+.hole-small {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border-light);
+    background: var(--bg-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text-tertiary);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hole-small.on {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+    box-shadow: 0 1px 4px rgba(44,44,44,0.3);
+}
+
+.pr-fn-note {
+    font-size: 22px; font-weight: 700;
+    color: var(--color-primary);
+    font-family: 'Noto Serif SC', serif;
+}
+
+.pr-detect-note {
+    font-size: 20px; font-weight: 700;
+    color: var(--text-primary); text-align: center;
+}
+
+.pr-status {
+    font-size: 16px; font-weight: 600; text-align: center;
+}
+
+.pr-canvas {
+    width: 100%; border-radius: 6px;
+    background: linear-gradient(180deg, #F5F0E8, #EDE8DC);
+    display: block; margin-top: 4px;
+}
+
+/* 控制栏 BPM 加强 */
+.pr-bar .bpm-big {
+    font-size: 22px; font-weight: 700;
+    color: var(--color-primary);
+    min-width: 44px; text-align: center;
+    font-family: 'Noto Serif SC', serif;
+}
+
+.pr-bar .beat-dot {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--border-color);
+    transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pr-bar .beat-dot.active {
+    background: var(--color-primary);
+    transform: scale(1.4);
+    box-shadow: 0 0 8px rgba(139,37,0,0.3);
+}
+
+.pr-bar .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border: none; color: white;
+    font-weight: 600; letter-spacing: 1px;
+}
+
+.pr-bar .btn-secondary {
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.pr-bar .mode-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px; font-weight: 500;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+}
+
+.pr-bar .mode-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(139,37,0,0.2);
+}
 
 /* 进度条 */
 .progress-bar-wrap {

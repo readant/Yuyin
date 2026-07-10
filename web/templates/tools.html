@@ -221,7 +221,18 @@ async function doAnalyze() {
     else alert('分析失败: '+d.error);
 }
 async function saveToEditor() {
-    const r = await fetch('/api/score', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title:currentFile.name.replace(/\.[^.]+$/,''), notes_data:scoreText}) });
+    // 将简谱文本转换为编辑器 inputArr 格式
+    const inputArr = scoreText.split(/\s+/).filter(Boolean).map(token => {
+        if (token === '|') return { note: 'BAR', lyric: '', lines: 0, dot: false };
+        if (token === '-') return { note: '-', lyric: '', lines: 0, dot: false };
+        return { note: token, lyric: '', lines: 0, dot: false };
+    });
+    const r = await fetch('/api/score', { method: 'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+            title: currentFile.name.replace(/\.[^.]+$/,''),
+            notes_data: JSON.stringify(inputArr)
+        })
+    });
     const d = await r.json(); if(d.success) window.location.href='/editor'; else alert('保存失败');
 }
 

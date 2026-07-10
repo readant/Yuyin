@@ -38,9 +38,29 @@ def _start_server_thread():
     uvicorn.run(app, host=HOST, port=PORT, log_level="info")
 
 
+def _create_tray_icon():
+    """生成系统托盘图标"""
+    from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QFont
+    pixmap = QPixmap(64, 64)
+    pixmap.fill(QColor(0, 0, 0, 0))
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    painter.setBrush(QColor(139, 37, 0))
+    painter.setPen(QColor(0, 0, 0, 0))
+    painter.drawEllipse(4, 4, 56, 56)
+
+    painter.setPen(QColor(235, 225, 205))
+    painter.setFont(QFont("KaiTi", 28, QFont.Weight.Bold))
+    painter.drawText(pixmap.rect(), 0x0084, "余")
+    painter.end()
+
+    return QIcon(pixmap)
+
+
 def run_with_splash():
     """带水墨启动动画的启动流程"""
-    from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon, QMenu
     from src.ui.splash import SplashWindow
 
     app_qt = QApplication(sys.argv)
@@ -52,12 +72,33 @@ def run_with_splash():
 
     # 显示水墨启动动画
     splash = SplashWindow()
+    tray = {}  # 用字典保持引用
+
+    def _setup_tray():
+        """创建系统托盘"""
+        icon = _create_tray_icon()
+        tray_icon = QSystemTrayIcon(icon, app_qt)
+        tray_icon.setToolTip("余音 - 竹笛学习助手")
+
+        menu = QMenu()
+        open_action = menu.addAction("打开页面")
+        open_action.triggered.connect(lambda: webbrowser.open(URL))
+        menu.addSeparator()
+        quit_action = menu.addAction("退出")
+        quit_action.triggered.connect(app_qt.quit)
+
+        tray_icon.setContextMenu(menu)
+        tray_icon.activated.connect(
+            lambda reason: webbrowser.open(URL)
+            if reason == QSystemTrayIcon.ActivationReason.DoubleClick else None
+        )
+        tray_icon.show()
+        tray['icon'] = tray_icon
 
     def on_splash_finished():
         splash.close()
         webbrowser.open(URL)
-        # 不调用 app_qt.quit()，保持进程存活以维持 uvicorn 服务
-        # 通过信号处理 Ctrl+C 退出
+        _setup_tray()
 
     splash.on_finished = on_splash_finished
     splash.show()

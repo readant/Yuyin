@@ -480,6 +480,14 @@ window.loadScore = async function(scoreId) {
         timeSelect.value = data.time_signature || '4/4';
         bpmInput.value = data.tempo || 80;
         try { inputArr = JSON.parse(data.notes_data || '[]'); } catch { inputArr = []; }
+        // 兼容旧版纯文本 notes_data：转换为数组格式
+        if (inputArr.length === 0 && data.notes_data && data.notes_data.trim().length > 0) {
+            inputArr = data.notes_data.split(/\s+/).filter(Boolean).map(token => {
+                if (token === '|') return { note: 'BAR', lyric: '', lines: 0, dot: false };
+                if (token === '-') return { note: '-', lyric: '', lines: 0, dot: false };
+                return { note: token, lyric: '', lines: 0, dot: false };
+            });
+        }
         selectedIndices = [];
         updatePreview();
     } catch (e) {

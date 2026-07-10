@@ -793,3 +793,16 @@ async def pitch_shift_audio(file: UploadFile = File(...), shift: int = 0):
         return {"success": True, "url": f"/static/audio/{out_name}"}
     except Exception as e:
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
+# ==================== 系统API ====================
+
+@app.post("/api/shutdown")
+async def shutdown_server():
+    """关闭 Web 服务"""
+    import threading
+    def _delayed_exit():
+        time.sleep(0.5)
+        os._exit(0)
+    threading.Thread(target=_delayed_exit, daemon=True).start()
+    return {"success": True, "message": "服务正在关闭..."}

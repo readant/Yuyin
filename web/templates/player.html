@@ -370,7 +370,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==================== 歌词加载 ====================
     lyricsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        // 有歌词时：点击切换显示/隐藏，双击打开加载弹窗
+        if (lyricsData.length > 0) {
+            if (lyricsDisplay.style.display === 'flex') {
+                lyricsDisplay.style.display = 'none';
+                vinylContainer.style.display = 'block';
+                lyricsBtn.classList.remove('active');
+            } else {
+                lyricsDisplay.style.display = 'flex';
+                vinylContainer.style.display = 'none';
+                lyricsBtn.classList.add('active');
+            }
+            return;
+        }
+        // 没有歌词时打开加载弹窗
         lyricsPopup.style.display = lyricsPopup.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // 双击歌词按钮打开加载弹窗
+    lyricsBtn.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        lyricsPopup.style.display = 'block';
     });
 
     document.getElementById('btn-close-lyrics-popup').addEventListener('click', () => {

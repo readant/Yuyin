@@ -53,6 +53,7 @@
             </div>
 
             <div class="controls-right">
+                <button id="btn-lyrics" class="ctrl-btn" title="加载歌词">歌词</button>
                 <button id="btn-mode" class="ctrl-btn" title="播放模式">顺序</button>
                 <button id="btn-list" class="ctrl-btn" title="播放列表">列表</button>
                 <button id="btn-volume" class="ctrl-btn" title="音量">音量</button>
@@ -62,6 +63,20 @@
         <!-- 音量滑块（点击音量按钮显示） -->
         <div class="volume-popup" id="volume-popup" style="display: none;">
             <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="80" orient="vertical">
+        </div>
+
+        <!-- 歌词加载弹窗 -->
+        <div class="lyrics-popup" id="lyrics-popup" style="display: none;">
+            <div class="popup-header">
+                <span>加载歌词</span>
+                <button id="btn-close-lyrics-popup" class="panel-close">×</button>
+            </div>
+            <textarea id="lyrics-textarea" class="popup-textarea" placeholder="粘贴LRC歌词...&#10;&#10;[00:05.000]第一句&#10;[00:10.000]第二句" rows="6"></textarea>
+            <div class="popup-btns">
+                <input type="file" id="lrc-file-input" accept=".lrc,.txt" style="display:none;">
+                <button class="btn btn-sm" onclick="document.getElementById('lrc-file-input').click()">选择文件</button>
+                <button id="btn-load-lyrics-text" class="btn btn-sm btn-primary">加载</button>
+            </div>
         </div>
     </div>
 
@@ -103,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeBtn = document.getElementById('btn-mode');
     const listBtn = document.getElementById('btn-list');
     const volumeBtn = document.getElementById('btn-volume');
+    const lyricsBtn = document.getElementById('btn-lyrics');
+    const lyricsPopup = document.getElementById('lyrics-popup');
+    const lyricsTextarea = document.getElementById('lyrics-textarea');
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
     const progressThumb = document.getElementById('progress-thumb');
@@ -190,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playBtn.textContent = '||';
         vinylDisc.classList.add('playing');
         playStartTime = Date.now();
-        loadLyrics();
+        refreshLyrics();
 
         // 动态背景色
         updateBackground();
@@ -349,6 +367,46 @@ document.addEventListener('DOMContentLoaded', () => {
         volumePopup.style.display = 'none';
     });
 
+    // ==================== 歌词加载 ====================
+    lyricsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        lyricsPopup.style.display = lyricsPopup.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('btn-close-lyrics-popup').addEventListener('click', () => {
+        lyricsPopup.style.display = 'none';
+    });
+
+    // 从文件加载
+    document.getElementById('lrc-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            lyricsTextarea.value = ev.target.result;
+            await loadLyricsFromText(ev.target.result);
+        };
+        reader.readAsText(file);
+    });
+
+    // 从文本加载
+    document.getElementById('btn-load-lyrics-text').addEventListener('click', async () => {
+        const text = lyricsTextarea.value.trim();
+        if (!text) return;
+        await loadLyricsFromText(text);
+        lyricsPopup.style.display = 'none';
+    });
+
+    async function loadLyricsFromText(text) {
+        const format = text.match(/\[\d{2}:\d{2}\.\d{2,3}\]/) ? 'lrc' : 'simple';
+        await fetch('/api/lyrics', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ text, format })
+        });
+        await refreshLyrics();
+    }
+
     // ==================== 播放列表面板 ====================
     listBtn.addEventListener('click', () => {
         playlistPanel.classList.add('open');
@@ -377,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 加载歌词
-    async function loadLyrics() {
+    async function refreshLyrics() {
         lyricsData = [];
         currentLyricIndex = -1;
         lyricsDisplay.style.display = 'none';

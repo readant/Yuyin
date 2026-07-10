@@ -3,83 +3,87 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">练习室</h1>
-    <p class="page-subtitle">选择简谱、录音演奏、比对分析</p>
+    <p class="page-subtitle">选曲、跟拍、吹奏、反馈</p>
 </div>
 
 <div class="practice-room">
-    <!-- 顶部：简谱选择 -->
     <div class="pr-top">
         <div class="card">
             <div class="card-header">
-                <h2 class="card-title">简谱</h2>
-                <div class="dash-actions">
-                    <input type="file" id="audio-file-input" accept="audio/*" style="display:none;">
-                    <button class="btn btn-sm" onclick="document.getElementById('audio-file-input').click()">从音频生成</button>
-                    <div id="gen-progress" class="progress-bar-wrap" style="display: none;">
-                        <div class="progress-bar-inner"></div>
-                        <span class="progress-text">生成中...</span>
-                    </div>
-                </div>
+                <h2 class="card-title">选择简谱</h2>
+                <input type="file" id="audio-file-input" accept="audio/*" style="display:none;">
+                <button class="btn btn-sm" onclick="document.getElementById('audio-file-input').click()">音频→简谱</button>
             </div>
             <div id="score-select" class="score-select-list"><p class="placeholder-text">加载中...</p></div>
+            <div id="gen-progress" class="progress-bar-wrap" style="display:none;"><div class="progress-bar-inner"></div><span class="progress-text">生成中...</span></div>
         </div>
     </div>
 
-    <!-- 中间：简谱显示 + 指法 -->
-    <div class="pr-mid">
-        <div class="pr-score" id="pr-score" style="display: none;">
+    <!-- 节拍器 + 控制 -->
+    <div class="card" id="control-card" style="display:none;">
+        <div class="card-header"><h2 class="card-title">练习控制</h2></div>
+        <div class="control-row">
+            <div class="bpm-box">
+                <button class="btn btn-sm" onclick="adjBpm(-10)">-10</button>
+                <button class="btn btn-sm" onclick="adjBpm(-1)">-1</button>
+                <div class="bpm-big" id="bpm-display">80</div>
+                <button class="btn btn-sm" onclick="adjBpm(1)">+1</button>
+                <button class="btn btn-sm" onclick="adjBpm(10)">+10</button>
+            </div>
+            <button id="btn-start" class="btn btn-primary btn-lg">▶ 开始练习</button>
+            <button id="btn-stop" class="btn btn-secondary btn-lg" disabled>■ 停止</button>
+        </div>
+        <div class="beat-bar" id="beat-bar">
+            <div class="beat-dot" id="beat-dot-1"></div>
+            <div class="beat-dot" id="beat-dot-2"></div>
+            <div class="beat-dot" id="beat-dot-3"></div>
+            <div class="beat-dot" id="beat-dot-4"></div>
+        </div>
+    </div>
+
+    <!-- 简谱滚动 + 指法 -->
+    <div class="pr-mid" id="pr-mid" style="display:none;">
+        <div class="pr-score">
             <div class="card">
                 <div class="card-header"><h2 class="card-title" id="pr-score-title">简谱</h2></div>
                 <div id="pr-score-preview" class="pr-score-preview"></div>
             </div>
         </div>
-        <div class="pr-fingering" id="pr-fingering" style="display: none;">
+        <div class="pr-fingering">
             <div class="card">
-                <div class="card-header"><h2 class="card-title">指法</h2></div>
+                <div class="card-header"><h2 class="card-title">当前指法</h2></div>
                 <div class="fingering-holes-large" id="pr-holes">
                     <div class="hole-large">-</div><div class="hole-large">-</div><div class="hole-large">-</div>
                     <div class="hole-large">-</div><div class="hole-large">-</div><div class="hole-large">-</div>
                 </div>
-                <div id="pr-fingering-note" class="fingering-note-name-large">--</div>
+                <div class="fingering-note-name-large" id="pr-fingering-note">--</div>
+                <div class="note-label" id="pr-note-label"></div>
             </div>
         </div>
     </div>
 
-    <!-- 底部：录音 + 反馈 + 比对 -->
-    <div class="pr-bottom">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">练习演奏</h2>
-                <div class="dash-actions">
-                    <button id="btn-practice-start" class="btn btn-primary" disabled>▶ 开始练习</button>
-                    <button id="btn-practice-stop" class="btn btn-secondary" disabled>■ 停止</button>
-                </div>
-            </div>
-
-            <!-- 录音波形 -->
-            <canvas id="practice-canvas" width="900" height="60" class="waveform" style="margin-bottom: 12px;"></canvas>
-
-            <!-- 实时反馈 -->
-            <div class="feedback-row">
-                <div class="feedback-note-large" id="detected-note">--</div>
-                <div class="feedback-arrow">→</div>
-                <div class="feedback-note-large" id="target-note">--</div>
-                <div class="feedback-status-lg" id="note-status"></div>
-            </div>
-
-            <!-- 练习统计 -->
-            <div class="stats-grid" id="practice-stats" style="display: none;">
-                <div class="stat-item"><div class="stat-value" id="stat-correct">0</div><div class="stat-label">正确</div></div>
-                <div class="stat-item"><div class="stat-value" id="stat-wrong">0</div><div class="stat-label">错误</div></div>
-                <div class="stat-item"><div class="stat-value" id="stat-rate">0%</div><div class="stat-label">准确率</div></div>
-            </div>
-
-            <!-- 比对结果 -->
-            <div id="compare-result" class="compare-result" style="display: none;">
-                <h3 style="margin-bottom: 8px;">比对结果</h3>
-                <div id="diff-notes" class="diff-notes"></div>
-            </div>
+    <!-- 反馈 -->
+    <div class="card" id="feedback-card" style="display:none;">
+        <div class="card-header"><h2 class="card-title">实时反馈</h2></div>
+        <div class="feedback-row">
+            <div class="feedback-note-large" id="detected-note">--</div>
+            <div class="feedback-arrow">→</div>
+            <div class="feedback-note-large" id="target-note">--</div>
+            <div class="feedback-status-lg" id="note-status"></div>
         </div>
+        <canvas id="practice-canvas" width="900" height="50" class="waveform"></canvas>
+    </div>
+
+    <!-- 结果 -->
+    <div class="card" id="result-card" style="display:none;">
+        <div class="card-header"><h2 class="card-title">练习结果</h2></div>
+        <div class="stats-grid stats-grid-4" style="margin-bottom:16px;">
+            <div class="stat-item"><div class="stat-value" id="stat-correct">0</div><div class="stat-label">正确</div></div>
+            <div class="stat-item"><div class="stat-value" id="stat-wrong">0</div><div class="stat-label">错误</div></div>
+            <div class="stat-item"><div class="stat-value" id="stat-rate">0%</div><div class="stat-label">准确率</div></div>
+            <div class="stat-item"><div class="stat-value" id="stat-time">0s</div><div class="stat-label">练习时长</div></div>
+        </div>
+        <div id="diff-notes" class="diff-notes"></div>
     </div>
 </div>
 {% endblock %}
@@ -87,18 +91,16 @@
 {% block scripts %}
 <script>
 const FIVE_MAP = {'(5)':'bbbbbb','(6)':'bbbbbw','(7)':'bbbbww','1':'bbbwww','2':'bbwwww','3':'bwwwww','4':'wbbwww','5':'wbbbbb','6':'bbbbbw','7':'bbbbww','[1]':'bbbwww','[2]':'bbwwww','[3]':'bwwwww','[4]':'hwwwww','[5]':'wbbbbb'};
-const ONE_MAP = {'1':'bbbbbb','2':'bbbbbw','3':'bbbbww','4':'bbbwww','5':'bbwwww','6':'bwwwww','7':'wwwwww','[1]':'wbbbbb','[2]':'bbbbbw','[3]':'bbbbww','[4]':'bbbwww','[5]':'bbwwww'};
 
-let selScore, scoreNotes = [], isPracticing = false;
-let pactx, pastream, parecorder, pachunks, pabuffer;
-let correctCount = 0, wrongCount = 0, noteIdx = 0;
+let scoreNotes = [], selScore, bpm = 80, noteIdx = 0, isRunning = false;
+let correct = 0, wrong = 0, metroTimer, stepTimer;
+let audioCtx, micStream, analyser, recChunks = [], recorder, startTime;
 
-// 加载简谱
+// ============ 加载简谱 ============
 async function loadScores() {
     const r = await fetch('/api/scores'); const d = await r.json();
     const list = document.getElementById('score-select');
-    if (d.scores?.length) list.innerHTML = d.scores.map(s => `<div class="score-item" onclick="selectScore('${s.id}')"><span>${s.title}</span><span style="color:var(--text-secondary)">${s.key}调</span></div>`).join('');
-    else list.innerHTML = '<p class="placeholder-text">暂无简谱</p>';
+    list.innerHTML = d.scores?.length ? d.scores.map(s => `<div class="score-item" onclick="selectScore(${s.id})"><span>${s.title}</span><span style="color:var(--text-secondary);">${s.key}调 · ${s.tempo}BPM</span></div>`).join('') : '<p class="placeholder-text">暂无简谱</p>';
 }
 
 window.selectScore = async (id) => {
@@ -106,112 +108,164 @@ window.selectScore = async (id) => {
     event.target.closest('.score-item').classList.add('selected');
     const r = await fetch(`/api/score/${id}`); const d = await r.json();
     selScore = d; scoreNotes = JSON.parse(d.notes_data || '[]');
-    document.getElementById('pr-score').style.display = 'block';
-    document.getElementById('pr-fingering').style.display = 'block';
+    bpm = d.tempo || 80;
+    document.getElementById('bpm-display').textContent = bpm;
+    document.getElementById('control-card').style.display = 'block';
+    document.getElementById('pr-mid').style.display = 'flex';
     document.getElementById('pr-score-title').textContent = d.title;
-    document.getElementById('pr-score-preview').innerHTML = scoreNotes.map(item => {
-        if (item.note === 'BAR') return '<span class="bar-line-mini">|</span>';
-        return `<span class="note-mini" id="note-${scoreNotes.indexOf(item)}">${item.note.replace(/[()\[\]]/g,'')}</span>`;
+
+    // 渲染简谱
+    document.getElementById('pr-score-preview').innerHTML = scoreNotes.map((item, i) => {
+        if (item.note === 'BAR') return `<span class="bar-line-mini">|</span>`;
+        return `<span class="note-mini" data-idx="${i}">${item.note.replace(/[()\[\]]/g,'')}</span>`;
     }).join('');
-    document.getElementById('pr-fingering-note').textContent = scoreNotes[0]?.note || '--';
-    updateFingering(scoreNotes[0]?.note);
-    document.getElementById('btn-practice-start').disabled = false;
+
+    // 显示第一个音
+    if (scoreNotes.length > 0) showNote(0);
 };
 
-function updateFingering(note) {
-    const type = document.getElementById('ff-type')?.value || '5';
-    const map = type === '5' ? FIVE_MAP : ONE_MAP; const f = map[note]; if (!f) return;
-    document.querySelectorAll('#pr-holes .hole-large').forEach((h,i) => { h.classList.toggle('pressed', f[i]==='b'); h.textContent = f[i]==='b' ? '●' : (f[i]==='h' ? '◐' : '○'); });
+// ============ 显示当前音符 ============
+function showNote(idx) {
+    document.querySelectorAll('.note-mini').forEach(e => e.classList.remove('active'));
+    const el = document.querySelector(`.note-mini[data-idx="${idx}"]`);
+    if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }); }
+
+    const note = scoreNotes[idx];
+    const display = note.note.replace(/[()\[\]]/g,'');
+    document.getElementById('pr-fingering-note').textContent = display;
+    document.getElementById('pr-note-label').textContent = note.lyric || '';
+    document.getElementById('target-note').textContent = note.note;
+
+    // 更新指法
+    const map = FIVE_MAP; const f = map[note.note];
+    if (f) {
+        document.querySelectorAll('#pr-holes .hole-large').forEach((h, j) => { h.classList.toggle('pressed', f[j]==='b'); h.textContent = f[j]==='b' ? '●' : (f[j]==='h' ? '◐' : '○'); });
+    }
 }
 
-// 练习模式
-document.getElementById('btn-practice-start').addEventListener('click', async () => {
-    if (!selScore) return;
+// ============ BPM ============
+window.adjBpm = (d) => { bpm = Math.max(20, Math.min(300, bpm + d)); document.getElementById('bpm-display').textContent = bpm; };
+
+// ============ 节拍器 ============
+function runMetronome() {
+    let beat = 0; const interval = 60000 / bpm;
+    document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active'));
+    metroTimer = setInterval(() => {
+        document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active'));
+        const dot = document.getElementById('beat-dot-' + ((beat % 4) + 1));
+        if (dot) dot.classList.add('active');
+        beat++;
+    }, interval);
+}
+
+// ============ 练习主循环 ============
+async function startPractice() {
+    if (!selScore || isRunning) return;
+
+    // 麦克风
     try {
-        pactx = new (window.AudioContext||window.webkitAudioContext)();
-        pastream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const src = pactx.createMediaStreamSource(pastream), ana = pactx.createAnalyser(); ana.fftSize = 2048; src.connect(ana);
-        parecorder = new MediaRecorder(pastream); pachunks = [];
-        parecorder.ondataavailable = e => pachunks.push(e.data);
-        parecorder.onstop = async () => {
-            pabuffer = await (await new Blob(pachunks, { type: 'audio/wav' })).arrayBuffer();
-            document.getElementById('btn-practice-stop').disabled = true;
-        };
-        parecorder.start(); isPracticing = true; correctCount = 0; wrongCount = 0; noteIdx = 0;
-        document.getElementById('btn-practice-start').disabled = true;
-        document.getElementById('btn-practice-stop').disabled = false;
-        document.getElementById('practice-stats').style.display = 'grid';
-        document.getElementById('compare-result').style.display = 'none';
-        document.getElementById('detected-note').textContent = '--';
-        document.getElementById('target-note').textContent = scoreNotes[0]?.note || '--';
-        runDetect(ana);
-    } catch(e) { alert('无法访问麦克风: '+e.message); }
-});
+        audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
+        audioCtx.createMediaStreamSource(micStream).connect(analyser);
 
-document.getElementById('btn-practice-stop').addEventListener('click', () => {
-    isPracticing = false; parecorder.stop(); pastream.getTracks().forEach(t => t.stop());
-    document.getElementById('btn-practice-start').disabled = false;
-    // 显示比对结果
-    showCompare();
-});
+        // 录音
+        recorder = new MediaRecorder(micStream); recChunks = [];
+        recorder.ondataavailable = e => recChunks.push(e.data);
+        recorder.start();
+    } catch(e) { alert('无法访问麦克风: '+e.message); return; }
 
-function runDetect(analyser) {
-    if (!isPracticing) return;
+    isRunning = true; noteIdx = 0; correct = 0; wrong = 0; startTime = Date.now();
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('btn-stop').disabled = false;
+    document.getElementById('feedback-card').style.display = 'block';
+    document.getElementById('result-card').style.display = 'none';
+
+    runMetronome();
+    stepThrough();
+    detectLoop();
+}
+
+function stepThrough() {
+    if (!isRunning || noteIdx >= scoreNotes.length) { stopPractice(); return; }
+
+    const note = scoreNotes[noteIdx];
+    if (note.note === 'BAR') { noteIdx++; stepThrough(); return; }
+
+    showNote(noteIdx);
+
+    // 计算当前音符时长
+    let duration = 60000 / bpm * 0.5;
+    if (note.lines === 1) duration = 60000 / bpm * 0.25;
+    else if (note.lines === 2) duration = 60000 / bpm * 0.125;
+
+    stepTimer = setTimeout(() => { noteIdx++; stepThrough(); }, duration);
+}
+
+function detectLoop() {
+    if (!isRunning) return;
     const buf = new Float32Array(analyser.fftSize); analyser.getFloatTimeDomainData(buf);
-    const freq = detectFreq(buf, pactx.sampleRate);
+    const freq = detectFreq(buf, audioCtx.sampleRate);
     const note = freqToNote(freq);
     if (note) {
         document.getElementById('detected-note').textContent = note;
+        const canvas = document.getElementById('practice-canvas'), ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        const buf2 = new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(buf2);
+        ctx.fillStyle = '#F5F0E8'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#8B2500';
+        for (let i = 0; i < buf2.length; i++) { const barH = (buf2[i]/255)*h; ctx.fillRect(i*(w/128), h-barH, w/128-1, barH); }
+
         if (noteIdx < scoreNotes.length) {
             const expected = scoreNotes[noteIdx].note;
-            document.getElementById('target-note').textContent = expected;
-            document.getElementById('pr-fingering-note').textContent = expected;
-            updateFingering(expected);
-            if (note === expected) { correctCount++; noteIdx++;
+            if (note === expected) {
+                correct++;
                 document.getElementById('note-status').textContent = '✓'; document.getElementById('note-status').style.color = '#2e7d32';
-                const el = document.getElementById('note-'+(noteIdx-1)); if(el) el.style.background = '#e8f5e9';
+                const el = document.querySelector(`.note-mini[data-idx="${noteIdx}"]`);
+                if (el) el.style.background = '#e8f5e9';
             }
         }
     }
-    document.getElementById('stat-correct').textContent = correctCount;
-    document.getElementById('stat-rate').textContent = Math.round(correctCount/((correctCount+wrongCount)||1)*100)+'%';
-    requestAnimationFrame(() => runDetect(analyser));
+    document.getElementById('stat-correct').textContent = correct;
+    document.getElementById('stat-rate').textContent = Math.round(correct / ((correct + wrong) || 1) * 100) + '%';
+    requestAnimationFrame(detectLoop);
 }
 
+function stopPractice() {
+    isRunning = false; clearInterval(metroTimer); clearTimeout(stepTimer);
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    if (recorder) recorder.stop();
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-stop').disabled = true;
+    document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active'));
+
+    // 显示结果
+    document.getElementById('result-card').style.display = 'block';
+    document.getElementById('stat-time').textContent = Math.round((Date.now() - startTime) / 1000) + 's';
+    document.getElementById('stat-wrong').textContent = Math.max(0, noteIdx - correct);
+    document.getElementById('diff-notes').innerHTML = scoreNotes.map((n, i) =>
+        `<span class="diff-note ${i < noteIdx ? (n.note !== 'BAR' ? 'match' : '') : 'miss'}">${n.note.replace(/[()\[\]]/g,'')}</span>`).join('');
+}
+
+document.getElementById('btn-start').addEventListener('click', startPractice);
+document.getElementById('btn-stop').addEventListener('click', stopPractice);
+
+// ============ 音高检测 ============
 function detectFreq(buf, sr) {
     let sum = 0; for (let v of buf) sum += v; const mean = sum/buf.length;
     let mc=0, ml=0;
     for (let lag=40; lag<buf.length/2; lag++) { let c=0; for (let i=0;i<buf.length-lag;i++) c+=(buf[i]-mean)*(buf[i+lag]-mean); if(c>mc){mc=c;ml=lag;} }
     return ml>0 ? sr/ml : 0;
 }
+function freqToNote(freq) { if(freq<50||freq>2000) return null; const st=Math.round(12*Math.log2(freq/440))+69; const nm=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']; const mp={C:'1',D:'2',E:'3',F:'4',G:'5',A:'6',B:'7'}; return mp[nm[st%12]]||nm[st%12]; }
 
-function freqToNote(freq) {
-    if (freq<50||freq>2000) return null;
-    const st = Math.round(12*Math.log2(freq/440))+69;
-    const map = {C:'1',D:'2',E:'3',F:'4',G:'5',A:'6',B:'7'};
-    const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-    return map[names[st%12]]||names[st%12];
-}
-
-function showCompare() {
-    if (!scoreNotes.length) return;
-    const el = document.getElementById('compare-result'); el.style.display = 'block';
-    document.getElementById('diff-notes').innerHTML = scoreNotes.map((n,i) =>
-        `<span class="diff-note ${i < noteIdx ? 'match' : 'miss'}">${n.note.replace(/[()\[\]]/g,'')}</span>`).join('');
-}
-
-// 从音频生成简谱
+// ============ 音频→简谱 ============
 document.getElementById('audio-file-input').addEventListener('change', async (e) => {
     const file = e.target.files[0]; if (!file) return;
-    const pbar = document.getElementById('gen-progress');
-    pbar.style.display = 'block';
+    const p = document.getElementById('gen-progress'); p.style.display = 'block';
     const fd = new FormData(); fd.append('file', file);
-    const r = await fetch('/api/audio/analyze', { method: 'POST', body: fd }); const d = await r.json();
-    pbar.style.display = 'none';
-    if (d.success && d.score_text) {
-        const sr = await fetch('/api/score', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title: file.name.replace(/\.[^.]+$/,''), notes_data: d.score_text}) });
-        if ((await sr.json()).success) location.reload();
-    } else alert('分析失败');
+    const r = await fetch('/api/audio/analyze', {method:'POST', body:fd}); const d = await r.json(); p.style.display = 'none';
+    if (d.success) { const sr = await fetch('/api/score', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:file.name.replace(/\.[^.]+$/,''),notes_data:d.score_text})}); if((await sr.json()).success) location.reload(); }
 });
 
 loadScores();
